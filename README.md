@@ -32,10 +32,10 @@ A self-paced, dependency-ordered path from no computer science background to fin
 |---|------|
 | 1 | **Gates are the only exit.** Pass the gate unaided or stay in the module. Take three attempts over at least two weeks; after two consecutive failures, go back to a prerequisite. |
 | 2 | **Ship something public every 14 days.** A writeup, a tool, a solved challenge. |
-| 3 | **No C before the machine model.** Module 01 unlocks C and assembly. |
-| 4 | **No exploitation before assembly and OS internals.** Module 04 unlocks exploitation. |
-| 5 | **Written authorization or nothing.** Nothing touches a system you don't own until the [module 05](core/05-the-boundary.md) legal gate is passed. |
-| 6 | **Theory before analysis tooling.** Module 08 unlocks symbolic execution, JIT and deobfuscation work. |
+| 3 | **No C before the machine model.** M1 unlocks C and assembly. |
+| 4 | **No exploitation before assembly and OS internals.** M4 unlocks exploitation. |
+| 5 | **Written authorization or nothing.** Nothing touches a system you don't own until the [M5](core/05-the-boundary.md) legal gate is passed. |
+| 6 | **Theory before analysis tooling.** M8 unlocks symbolic execution, JIT and deobfuscation work. |
 | 7 | **Use the tool, but do the technique by hand first.** Debuggers, disassemblers and exploit libraries are fine from day one. Don't automate a technique until you've done it by hand three times. |
 
 ## Curriculum Structure
@@ -57,7 +57,7 @@ A self-paced, dependency-ordered path from no computer science background to fin
 | **Tracks** | | | |
 | 10 | [Tracks](tracks/README.md) | One or two specialisations, past the published edge. | 600+ each |
 
-Module 07 is the employability line, for exploit development and offensive security engineering. Modules 08–10 are what research takes.
+M7 is the employability line, for exploit development and offensive security engineering. M8–10 are what research takes.
 
 ### Dependency graph
 
@@ -71,11 +71,11 @@ graph LR
 
 ### Prerequisites
 
-[Module 00](prerequisites/00-the-terminal.md): algebra fluency, mathematical notation, a shell, git and Python. If you already work in a terminal every day, take the gate and move on.
+[M00](prerequisites/00-the-terminal.md): Algebra fluency, mathematical notation, a shell, git and Python. If you already work in a terminal every day, take the gate and move on.
 
 ### Core
 
-[Modules 01–09](core/) are the shared foundation. Everyone walks the same road. Each module has the same parts:
+[M1–9](core/) are the shared foundation. Everyone walks the same road. Each module has the same parts:
 
 - **Requires:** the gate that must be passed first.
 - **Outcomes:** what you can do on exit.
@@ -91,7 +91,7 @@ graph LR
 
 ### Tracks
 
-[Specialisations](tracks/README.md) open only after module 09. Choose on evidence of where you are strongest, and choose at most two.
+[Specialisations](tracks/README.md) open only after M9. Choose on evidence of where you are strongest, and choose at most two.
 
 ## Placement
 
@@ -107,7 +107,7 @@ Every gate is also the entry test for the next module. Take the gates cold, in o
 | CS graduate | 04, then 08 |
 | CTF exploitation player | 06, 07 |
 
-Nobody skips the [module 05](core/05-the-boundary.md) legal gate or the 14-day shipping rule.
+Nobody skips the [M5](core/05-the-boundary.md) legal gate or the 14-day shipping rule.
 
 ## Guides
 
@@ -123,10 +123,9 @@ OSVR produces a researcher capable of independent discovery in one domain. It do
 ## Known gaps
 
 - No free structured resource exists for CET/shadow-stack bypass or the Windows heap.
-- No resource exists for the core activity of module 09: choosing a target on your own and auditing it until something gives.
-- Hour estimates are judgement, not data. Recalibrate after module 02.
-- Placing theory at 08 instead of earlier is a judgement call. The counter-argument (dataflow would help in 06–07) is strong.
+- No resource exists for the core activity of M9: choosing a target on your own and auditing it until something gives.
+- Hour estimates are judgement, not data. Recalibrate after M2.
+- Placing theory at M8 instead of earlier is a judgement call. The counter-argument (dataflow would help in 06–07) is strong.
 
 ---
 
-<sub>OSVR merges and supersedes [THC](https://github.com/itsbadsignal/thc) and [NAND to 0-Day](https://github.com/itsbadsignal/nandto0day). Structure inspired by [OSSU](https://github.com/ossu/computer-science) and [Teach Yourself CS](https://teachyourselfcs.com/). Every resource belongs to the people who built it; OSVR only orders them.</sub>
