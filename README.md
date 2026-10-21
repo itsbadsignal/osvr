@@ -11,7 +11,7 @@
 
 **Security Vulnerability Research education, open to everyone.**
 
-`from zero` · `to original research` · `~4,000 h core` · `free-first`
+`from zero` · `to original research` · `~4,000h core` · `free-first`
 
 </div>
 
@@ -42,9 +42,9 @@ A self-paced, dependency-ordered path from no computer science background to fin
 
 | # | Module | Goal | Hours |
 |---|--------|------|-------|
-| **Prerequisites** |||
+| **Prerequisites** | | | |
 | 00 | [The Terminal](prerequisites/00-the-terminal.md) | Shell, editor, git, one scripting language, and the math floor. | 30–50 |
-| **Core** |||
+| **Core** | | | |
 | 01 | [The Machine](core/01-the-machine.md) | What a computer physically does, from NAND to CPU. | 45–75 |
 | 02 | [The Program](core/02-the-program.md) | C, memory, data structures, discrete math. | 320–480 |
 | 03 | [The Instruction Stream](core/03-the-instruction-stream.md) | Read x86-64 without a decompiler. | 200–300 |
@@ -54,7 +54,7 @@ A self-paced, dependency-ordered path from no computer science background to fin
 | 07 | [The Defended Target](core/07-the-defended-target.md) | Mitigations on, reliably, on two architectures. | 550–850 |
 | 08 | [The Theory](core/08-the-theory.md) | Automata, compilers, dataflow, static analysis. | 160–260 |
 | 09 | [The Research](core/09-the-research.md) | Audit, fuzz, triage, disclose. | 600–1,000+ |
-| **Tracks** |||
+| **Tracks** | | | |
 | 10 | [Tracks](tracks/README.md) | One or two specialisations, past the published edge. | 600+ each |
 
 Module 07 is the employability line, for exploit development and offensive security engineering. Modules 08–10 are what research takes.
