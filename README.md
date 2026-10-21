@@ -1,8 +1,8 @@
 <div align="center">
 
 <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/ode-white.svg">
-    <img src="assets/brand/ode.svg" alt="Open Security Vulnerability Research logo" width="280">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/osv-white.svg">
+    <img src="assets/brand/osv-dark.svg" alt="Open Security Vulnerability Research logo" width="120">
 </picture>
 
 # Open Security Vulnerability Research™

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 120 48" width="120" height="48" role="img" aria-label="osv">
+  <defs>
+    <g id="w" fill="#111111">
+      <path fill-rule="evenodd" d="M4 8h32v32H4zM10 14v20h20V14z"/>
+      <path d="M44 8h32v6H50v7h26v19H44v-6h26v-7H44z"/>
+      <path d="M84 8h6l10 24 10-24h6l-13 32h-6z"/>
+    </g>
+    <clipPath id="a"><rect x="-10" y="0" width="140" height="17"/></clipPath>
+    <clipPath id="b"><rect x="-10" y="17" width="140" height="6"/></clipPath>
+    <clipPath id="c"><rect x="-10" y="23" width="140" height="10"/></clipPath>
+    <clipPath id="d"><rect x="-10" y="33" width="140" height="15"/></clipPath>
+  </defs>
+  <use xlink:href="#w" clip-path="url(#a)"/>
+  <use xlink:href="#w" clip-path="url(#b)" transform="translate(5 0)"/>
+  <use xlink:href="#w" clip-path="url(#c)" transform="translate(-2 0)"/>
+  <use xlink:href="#w" clip-path="url(#d)"/>
+  <use xlink:href="#w" clip-path="url(#c)" transform="translate(3 0)" opacity=".3"/>
+  <g fill="#111111">
+    <rect x="80" y="19" width="16" height="2"/>
+    <rect x="0" y="36" width="7" height="1.5" opacity=".6"/>
+    <rect x="108" y="27" width="10" height="1" opacity=".6"/>
+  </g>
+</svg>
