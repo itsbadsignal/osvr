@@ -2,7 +2,7 @@
 
 > Find a memory-corruption bug in something you didn't write, characterise the primitive it yields, and take control of execution. Mitigations stay off, so the mechanism is visible.
 
-**Requires:** [05 gate](05-the-boundary.md) · **Hours:** 450–650 · **Next:** [07 · The Defended Target](07-the-defended-target.md)
+**Requires:** [M5 gate](05-the-boundary.md) · **Hours:** 450-650 · **Next:** [M7 · The Defended Target](07-the-defended-target.md)
 
 Mitigations are deliberately off through this module. Turning them on before the mechanism is visible teaches defeat rather than understanding. Stack first; then the heap, which is where most people stall. That is normal and planned for.
 

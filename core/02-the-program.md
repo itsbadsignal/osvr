@@ -1,8 +1,8 @@
 # 02 · The Program
 
-> C properly, the process as a laid-out address space, and the discrete math everything after module 08 rests on.
+> C properly, the process as a laid-out address space, and the discrete math everything after M8 rests on.
 
-**Requires:** [01 gate](01-the-machine.md) · **Hours:** 320–480 · **Next:** [03 · The Instruction Stream](03-the-instruction-stream.md)
+**Requires:** [M1 gate](01-the-machine.md) · **Hours:** 320-480 · **Next:** [M3 · The Instruction Stream](03-the-instruction-stream.md)
 
 ## Outcomes
 
@@ -16,11 +16,11 @@
 
 | Role | Resource | Cost | Notes |
 |------|----------|------|-------|
-| Core | [CS50x](https://cs50.harvard.edu/x/) · weeks 1–5 | Free | First pass at C. Stop at week 5; after that it leaves systems. |
+| Core | [CS50x](https://cs50.harvard.edu/x/) · weeks 1-5 | Free | First pass at C. Stop at week 5; after that it leaves systems. |
 | Core | [Modern C](https://gustedt.gitlabpages.inria.fr/modern-c/) (Gustedt) | Free | Second pass, after CS50, never before. |
 | Core | Implement in C: dynamic array, linked list, hash table, BST, graph with BFS/DFS | Free | No course. The bottleneck is code volume. |
 | Core | [Algorithms](https://jeffe.cs.illinois.edu/teaching/algorithms/) (Erickson) | Free | Read the chapters your data-structure work touches. |
-| Core | [Discrete Mathematics: An Open Introduction](https://discrete.openmathbooks.org/dmoi3.html) (Levin) | Free | Logic, sets, induction, combinatorics, graphs. Prerequisite for 05 crypto and 08. |
+| Core | [Discrete Mathematics: An Open Introduction](https://discrete.openmathbooks.org/dmoi3.html) (Levin) | Free | Logic, sets, induction, combinatorics, graphs. Prerequisite for M5 crypto and M8. |
 | Core | [Nand2Tetris](https://www.nand2tetris.org/) · project 6 | Free | Write the assembler. |
 | Core | Valgrind, ASan, UBSan, gdb | Free | Run everything under them from week one. |
 | Alt | [Beej's Guide to C Programming](https://beej.us/guide/bgc/) | Free | If CS50's video format doesn't suit you. |

@@ -2,9 +2,9 @@
 
 > Automata, compilers, dataflow and static analysis, at the depth research consumes, placed where it is finally motivated.
 
-**Requires:** [07 gate](07-the-defended-target.md) · **Hours:** 160–260 · **Next:** [09 · The Research](09-the-research.md)
+**Requires:** [M7 gate](07-the-defended-target.md) · **Hours:** 160-260 · **Next:** [M9 · The Research](09-the-research.md)
 
-Theory sits here, after exploitation, on purpose: you don't need automata to smash a stack, and front-loading it is how people burn out before they've had any fun. The counter-argument, that dataflow and grammars would make modules 06–07 easier if learned earlier, is genuinely strong; see [known gaps](../README.md#known-gaps).
+Theory sits here, after exploitation, on purpose: you don't need automata to smash a stack, and front-loading it is how people burn out before they've had any fun. The counter-argument, that dataflow and grammars would make M6–M7 easier if learned earlier, is genuinely strong; see [known gaps](../README.md#known-gaps).
 
 ## Outcomes
 

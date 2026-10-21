@@ -2,7 +2,7 @@
 
 > Stop being handed bugs.
 
-**Requires:** [08 gate](08-the-theory.md) · **Hours:** 600–1,000+ · **Next:** [10 · Tracks](../tracks/README.md)
+**Requires:** [M8 gate](08-the-theory.md) · **Hours:** 600-1,000+ · **Next:** [M10 · Tracks](../tracks/README.md)
 
 ## Outcomes
 

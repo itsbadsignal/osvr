@@ -2,7 +2,7 @@
 
 > Read x86-64 fluently, without a decompiler.
 
-**Requires:** [02 gate](02-the-program.md) · **Hours:** 200–300 · **Next:** [04 · The System](04-the-system.md)
+**Requires:** [M2 gate](02-the-program.md) · **Hours:** 200-300 · **Next:** [M4 · The System](04-the-system.md)
 
 ## Outcomes
 
@@ -17,8 +17,8 @@
 |------|----------|------|-------|
 | Core | [pwn.college · Computing 101, Playing With Programs](https://pwn.college/dojos) | Free | ~95% hands-on. Do these before the books. |
 | Core | [OST2 · Arch1001: x86-64 Assembly](https://ost2.fyi/Arch1001) | Free | The deepest free architecture material. High dropout risk, so pair it with pwn.college. |
-| Core | [OST2 · Dbg1012: Introductory GDB](https://ost2.fyi/Dbg1012) | Free | Debugger fluency, needed by module 06. |
-| Core | [CS:APP](https://csapp.cs.cmu.edu/) (3rd ed.) · chs. 2–3, 6 + Bomb Lab & Attack Lab | ~€70 used | The labs are the reason to use it. Not the IA-32 2nd edition. |
+| Core | [OST2 · Dbg1012: Introductory GDB](https://ost2.fyi/Dbg1012) | Free | Debugger fluency, needed by M6. |
+| Core | [CS:APP](https://csapp.cs.cmu.edu/) (3rd ed.) · chs. 2-3, 6 + Bomb Lab & Attack Lab | ~€70 used | The labs are the reason to use it. Not the IA-32 2nd edition. |
 | Core | [Compiler Explorer](https://godbolt.org/) | Free | Keep it open always. |
 | Alt | [OST2 · Arch1005: RISC-V](https://ost2.fyi/Arch1005) | Free | Cleaner ISA for concepts. A supplement, not a substitute. |
 | Ref | [Intel SDM](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html) | Free | The primary source. |

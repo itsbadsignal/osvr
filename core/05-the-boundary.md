@@ -2,9 +2,9 @@
 
 > Learn what a trust boundary is in access control, cryptography, the web, the cloud and the law before crossing one.
 
-**Requires:** [04 gate](04-the-system.md) · **Hours:** 250–380 · **Next:** [06 · The Bug](06-the-bug.md)
+**Requires:** [M4 gate](04-the-system.md) · **Hours:** 250-380 · **Next:** [M6 · The Bug](06-the-bug.md)
 
-Nothing in modules 06–10 starts until this gate is passed. Read [Legal scope, lab and disclosure](../guides/legal-and-lab.md) alongside this module.
+Nothing in M6-M10 starts until this gate is passed. Read [Legal scope, lab and disclosure](../guides/legal-and-lab.md) alongside this module.
 
 ## Outcomes
 
@@ -21,7 +21,7 @@ Nothing in modules 06–10 starts until this gate is passed. Read [Legal scope, 
 | Core | [Saltzer & Schroeder, *The Protection of Information in Computer Systems*](https://web.mit.edu/Saltzer/www/publications/protection/) (1975) | Free | Least privilege, complete mediation, fail-safe defaults. Read the original. |
 | Core | [Serious Cryptography](https://nostarch.com/serious-cryptography-2nd-edition) (Aumasson, 2nd ed.) | ~€50 | Attack-aware, current through post-quantum. |
 | Core | [CryptoHack](https://cryptohack.org/) | Free | The math made concrete. |
-| Core | [Cryptopals](https://cryptopals.com/) · sets 1–3 | Free | Implement the attack or fail. No hints; CryptoHack is the fallback. |
+| Core | [Cryptopals](https://cryptopals.com/) · sets 1-3 | Free | Implement the attack or fail. No hints; CryptoHack is the fallback. |
 | Core | [PortSwigger Web Security Academy](https://portswigger.net/web-security) | Free | The best free resource in this curriculum. It trains recognition, not discovery; the gate corrects that. |
 | Core | [flaws.cloud](https://flaws.cloud/) · [CloudGoat](https://github.com/RhinoSecurityLabs/cloudgoat) | Free | Cloud IAM and misconfiguration. Deploy CloudGoat yourself. |
 | Core | [SEED Labs](https://seedsecuritylabs.org/) | Free | Network, PKI, access control. Some labs disable mitigations for visibility; don't mistake that for reality. |
@@ -55,4 +55,4 @@ Nothing in modules 06–10 starts until this gate is passed. Read [Legal scope, 
 
 ## Fork
 
-From here you can run a **web/cloud** line in parallel with 06–07. It's the shortest path to bounty income. See the [web/cloud track](../tracks/README.md#web-cloud-and-logic).
+From here you can run a **web/cloud** line in parallel with M6-M7. It's the shortest path to bounty income. See the [web/cloud track](../tracks/README.md#web-cloud-and-logic).

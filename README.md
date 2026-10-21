@@ -125,7 +125,7 @@ OSVR produces a researcher capable of independent discovery in one domain. It do
 - No free structured resource exists for CET/shadow-stack bypass or the Windows heap.
 - No resource exists for the core activity of M9: choosing a target on your own and auditing it until something gives.
 - Hour estimates are judgement, not data. Recalibrate after M2.
-- Placing theory at M8 instead of earlier is a judgement call. The counter-argument (dataflow would help in 06–07) is strong.
+- Placing theory at M8 instead of earlier is a judgement call. The counter-argument (dataflow would help in M6–M7) is strong.
 
 ---
 

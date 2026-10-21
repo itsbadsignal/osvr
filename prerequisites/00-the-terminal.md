@@ -2,7 +2,7 @@
 
 > Own the machine you already have: shell, editor, version control, one scripting language, and the math floor.
 
-**Requires:** a computer · **Hours:** 30–50 · **Next:** [01 · The Machine](../core/01-the-machine.md)
+**Requires:** a computer · **Hours:** 30-50 · **Next:** [M1 · The Machine](../core/01-the-machine.md)
 
 ## Outcomes
 
@@ -21,8 +21,8 @@
 | Core | [Automate the Boring Stuff with Python](https://automatetheboringstuff.com/) | Free | Through functions and file I/O. pwntools, fuzzers and angr all assume Python. |
 | Alt | [OverTheWire · Bandit](https://overthewire.org/wargames/bandit/) | Free | Gentler than Luminarium, less thorough. |
 | Alt | [The Linux Command Line](https://linuxcommand.org/tlcl.php) (Shotts) | Free | If you prefer a book. |
-| Ref | [Pro Git](https://git-scm.com/book/en/v2) | Free | Chapters 1–3. |
-| Ref | [Khan Academy · Algebra](https://www.khanacademy.org/math/algebra) · [Book of Proof](https://richardhammack.github.io/BookOfProof/) ch. 1 | Free | Math floor. If Book of Proof ch. 1 reads fine, you're past it. |
+| Ref | [Pro Git](https://git-scm.com/book/en/v2) | Free | Chapters 1-3. |
+| Ref | [Khan Academy · Algebra](https://www.khanacademy.org/math/algebra) · [Book of Proof](https://richardhammack.github.io/BookOfProof/) ch.1 | Free | Math floor. If Book of Proof ch.1 reads fine, you're past it. |
 
 Calculus, linear algebra and statistics aren't needed. Only the RF track needs calculus.
 

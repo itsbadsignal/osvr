@@ -1,8 +1,8 @@
 # 07 · The Defended Target
 
-> Everything from module 06, against targets that fight back: mitigations on, reliability required, two architectures, the bug no longer handed to you.
+> Everything from M6, against targets that fight back: mitigations on, reliability required, two architectures, the bug no longer handed to you.
 
-**Requires:** [06 gate](06-the-bug.md) · **Hours:** 550–850 · **Next:** [08 · The Theory](08-the-theory.md)
+**Requires:** [M6 gate](06-the-bug.md) · **Hours:** 550-850 · **Next:** [M8 · The Theory](08-the-theory.md)
 
 This is the employability boundary. Someone who stops here has a career in exploit development or offensive security engineering.
 

@@ -2,7 +2,7 @@
 
 > Descend to the syscall boundary until the loader, the kernel and the wire are all visible at once.
 
-**Requires:** [03 gate](03-the-instruction-stream.md) · **Hours:** 300–420 · **Next:** [05 · The Boundary](05-the-boundary.md)
+**Requires:** [M3 gate](03-the-instruction-stream.md) · **Hours:** 300-420 · **Next:** [M5 · The Boundary](05-the-boundary.md)
 
 ## Outcomes
 
@@ -50,4 +50,4 @@
 
 **Fail if:** any byte is unexplained.
 
-**Unlocks:** exploitation (still only in your own lab until the module 05 gate). From here you're employable as a junior systems or backend engineer.
+**Unlocks:** exploitation (still only in your own lab until the M5 gate). From here you're employable as a junior systems or backend engineer.
