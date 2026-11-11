@@ -107,19 +107,34 @@ def check_compile_commands(build):
     return True
 
 
+def used_flags(build):
+    """Flags the build really used for cJSON.c / tests/parse_examples.c, from compile_commands.json.
+    Keeps -f*, -O*, -g*, -m* tokens only (drops compiler, -c, -o, sources, -I/-D, warnings, -std)."""
+    cc = os.path.join(build, "compile_commands.json")
+    try:
+        ents = json.load(open(cc))
+    except (OSError, ValueError):
+        return None
+    for e in ents:
+        if e["file"].endswith("/cJSON.c") or e["file"].endswith("/tests/parse_examples.c"):
+            toks = (e.get("command") or " ".join(e.get("arguments", []))).split()
+            return [t for t in toks[1:] if re.match(r"-(f|O|g|m)", t)]
+    return None
+
+
 def check_ubsan_fatal(build):
-    flags = (cache_val(build, "CMAKE_C_FLAGS") or "")
-    bt = (cache_val(build, "CMAKE_BUILD_TYPE") or "")
-    if bt:
-        flags += " " + (cache_val(build, "CMAKE_C_FLAGS_" + bt.upper()) or "")
+    flags = used_flags(build)
+    if flags is None:
+        bad("ubsan fatal: no compile_commands.json entry for cJSON.c or tests/parse_examples.c to take the flags from")
+        return False
     t = tempfile.mkdtemp()
-    c = run(["gcc"] + flags.split() + ["/opt/osvr/fnd03/src/ubtrip.c", "-o", t + "/u"])
+    c = run(["gcc"] + flags + ["/opt/osvr/fnd03/src/ubtrip.c", "-o", t + "/u"])
     if not os.path.exists(t + "/u"):
-        bad("ubsan fatal: the cache flags do not compile the UBSan tripwire"); shutil.rmtree(t); return False
+        bad("ubsan fatal: the flags your build used do not compile the UBSan tripwire"); shutil.rmtree(t); return False
     p = run([t + "/u"], env=dict(ENV, ASAN_OPTIONS="detect_leaks=0"))
     shutil.rmtree(t)
     if p.returncode != 0 and "runtime error:" in p.stdout:
-        ok(f"ubsan fatal: tripwire built with your flags exits {p.returncode} with a runtime error line"); return True
+        ok(f"ubsan fatal: tripwire built with the flags your build used exits {p.returncode} with a runtime error line"); return True
     bad("ubsan fatal: UBSan findings would not fail a test (tripwire exit status 0 or no report)")
     return False
 
@@ -247,7 +262,7 @@ def project(script):
     if not os.path.isfile(script):
         bad(f"script: {script} not found"); return summary()
     (ok if os.access(script, os.X_OK) else bad)("script: executable")
-    pre = tree_hash("/src/cjson"); g0 = run(["git", "-C", "/src/cjson", "status", "--porcelain"]).stdout
+    pre = tree_hash("/src/cjson"); g0 = run(["git", "-C", "/src/cjson", "status", "--porcelain"], env=dict(ENV, GIT_OPTIONAL_LOCKS="0")).stdout
     for i in (1, 2):
         w = tempfile.mkdtemp(prefix="osvr-w")
         p = run_script(script, "/src/cjson", w)
@@ -262,6 +277,7 @@ def project(script):
         if not os.path.isdir(b):
             bad(f"run {i}: BUILD_DIR {b} does not exist"); continue
         check_instrumentation(b)
+        check_ubsan_fatal(b)
         check_tests_pass(b)
         shutil.rmtree(w, ignore_errors=True)
     # mutant: same sources, but the compile step silently loses -fsanitize=address while the link keeps the runtime
@@ -269,9 +285,21 @@ def project(script):
     make_mutant(mdir)
     w = tempfile.mkdtemp(prefix="osvr-w")
     p = run_script(script, mdir, w)
-    (ok if p.returncode != 0 else bad)(f"verify stage: script {'rejects' if p.returncode != 0 else 'ACCEPTS'} a source tree whose objects lack ASan instrumentation (exit {p.returncode})")
+    pe = [os.path.join(r, "parse_examples") for r, _, fs in os.walk(w) if "parse_examples" in fs and os.access(os.path.join(r, "parse_examples"), os.X_OK) and not os.path.isdir(os.path.join(r, "parse_examples"))]
+    a, ld = (count(pe[0], "__asan_report"), run(["ldd", pe[0]]).stdout) if pe else (None, "")
+    if p.returncode == 0:
+        if a is not None and a > 0:
+            ok(f"verify stage: script accepted the mutated tree, but its build in the work dir has {a} __asan_report symbols (the mutation did not remove instrumentation), so accepting it is legitimate")
+        else:
+            bad("verify stage: script ACCEPTS a source tree whose objects lack ASan instrumentation (exit 0" + ("" if pe else "; no parse_examples under WORKDIR to inspect") + ")")
+    elif not pe:
+        bad(f"verify stage: script exited {p.returncode} on the mutated tree, but no parse_examples was left under WORKDIR. Build under WORKDIR and keep the build tree when verification fails (a refusal before the build does not count)")
+    elif a == 0 and "libasan" in ld:
+        ok(f"verify stage: script built the mutant (parse_examples: libasan linked, 0 __asan_report) and then rejected it (exit {p.returncode})")
+    else:
+        bad(f"verify stage: script exited {p.returncode} but the mutant build in its work dir is not the expected one (__asan_report={a}, libasan {'linked' if 'libasan' in ld else 'not linked'})")
     shutil.rmtree(mt, ignore_errors=True); shutil.rmtree(w, ignore_errors=True)
-    post = tree_hash("/src/cjson"); g1 = run(["git", "-C", "/src/cjson", "status", "--porcelain"]).stdout
+    post = tree_hash("/src/cjson"); g1 = run(["git", "-C", "/src/cjson", "status", "--porcelain"], env=dict(ENV, GIT_OPTIONAL_LOCKS="0")).stdout
     (ok if (pre == post and g0 == g1 == "") else bad)("/src/cjson: unchanged by your script")
     return summary()
 
@@ -295,8 +323,11 @@ def health(lt):
     """Self-test with fixtures. Writes only to temp dirs; asserts exact exit codes."""
     global fails
     me = os.path.abspath(__file__)
+    def subo(*args):
+        r = subprocess.run([sys.executable, me] + list(args), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        return r.returncode, r.stdout
     def sub(*args):
-        return subprocess.run([sys.executable, me] + list(args), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).returncode
+        return subo(*args)[0]
     t = tempfile.mkdtemp(prefix="osvr-h")
     # reference build via the reference script
     w = os.path.join(t, "w"); p = run(["bash", os.path.join(lt, "ref-build-asan.sh"), "/src/cjson", w], timeout=300)
@@ -315,6 +346,7 @@ def health(lt):
     open(os.path.join(ch, "answers.md"), "w").write(truth)
     # trap build: documented option, no explicit sanitizer flags
     src = os.path.join(t, "trap-src"); shutil.copytree("/src/cjson", src, symlinks=True)
+    os.chmod(src, 0o755)
     for r, d, f in os.walk(src):
         for n in d + f:
             try: os.chmod(os.path.join(r, n), 0o755 if n in d else 0o644)
@@ -322,10 +354,28 @@ def health(lt):
     tb = os.path.join(src, "build-doc")
     run(["cmake", "-S", src, "-B", tb, "-DCMAKE_BUILD_TYPE=Debug", "-DENABLE_SANITIZERS=ON", "-DENABLE_CJSON_TEST=ON", "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON", "-DCMAKE_C_FLAGS=-g -O0 -fno-omit-frame-pointer"])
     run(["cmake", "--build", tb, "-j4"], timeout=300)
+    if not os.path.isfile(os.path.join(tb, "cJSON_test")):
+        fails += 1; print("HEALTH FAIL trap build (ENABLE_SANITIZERS=ON) was not built")
     exitcode("challenge: ENABLE_SANITIZERS=ON build (no ASan)", sub("challenge", tb, ch), 1)
+    # option plus the learner's own -fsanitize=address: cJSON appends -fsanitize=undefined -fno-sanitize-recover itself
+    ob = os.path.join(src, "build-opt")
+    cp = run(["cmake", "-S", src, "-B", ob, "-DCMAKE_BUILD_TYPE=Debug", "-DENABLE_SANITIZERS=ON", "-DENABLE_CJSON_TEST=ON", "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON", "-DCMAKE_C_FLAGS=-g -O0 -fno-omit-frame-pointer -fsanitize=address"])
+    if not os.path.isfile(os.path.join(ob, "CMakeCache.txt")): print("    | cmake configure failed: " + cp.stdout[-500:].replace("\n", " / "))
+    run(["cmake", "--build", ob, "-j4"], timeout=300)
+    rc, out = subo("challenge", ob, ch)
+    exitcode("challenge: ENABLE_SANITIZERS=ON plus own -fsanitize=address", rc, 0)
+    if rc != 0:
+        print("\n".join("    | " + l for l in out.splitlines() if l.startswith("FAIL")))
+    for needle in ("PASS  ubsan fatal:", "PASS  instrumentation:"):
+        if needle not in out:
+            fails += 1; print(f"HEALTH FAIL expected line missing: {needle}")
     exitcode("challenge: missing build dir", sub("challenge", os.path.join(t, "nope"), ch), 1)
     exitcode("project: reference script", sub("project", os.path.join(lt, "ref-build-asan.sh")), 0)
     exitcode("project: weak verify stage", sub("project", os.path.join(lt, "weak-build-asan.sh")), 1)
+    exitcode("project: deletes its work dir when verification fails", sub("project", os.path.join(lt, "cleanup-build-asan.sh")), 1)
+    exitcode("project: no -fno-sanitize-recover (UBSan not fatal)", sub("project", os.path.join(lt, "norecover-build-asan.sh")), 1)
+    exitcode("project: removes the mutation from its own SRC copy (legitimately accepts)", sub("project", os.path.join(lt, "unmutate-build-asan.sh")), 0)
+    exitcode("project: refuses the mutated SRC in its pin stage", sub("project", os.path.join(lt, "pinrefuse-build-asan.sh")), 1)
     # mystery-check fixtures
     mdir = "/opt/osvr/fnd03/tools/mystery-check"
     good = "m1: asan_code=yes asan_runtime=yes ubsan=yes debug_info=yes opt=O0 evidence: x\nm2: asan_code=no asan_runtime=yes ubsan=no debug_info=yes opt=O0\nm3: asan_code=no asan_runtime=no ubsan=yes debug_info=yes opt=O0\nm4: asan_code=yes asan_runtime=yes ubsan=no debug_info=no opt=O0\nm5: asan_code=no asan_runtime=no ubsan=no debug_info=yes opt=O0\nm6: asan_code=yes asan_runtime=yes ubsan=yes debug_info=no opt=O2\n"

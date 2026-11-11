@@ -61,8 +61,8 @@ cards:
     answer: "'LeakSanitizer has encountered a fatal error ... does not work under ptrace (strace, gdb, etc)'. LSan runs at exit and refuses to work under a tracer. Run gdb with ASAN_OPTIONS=detect_leaks=0."
   - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c15
     type: concept
-    prompt: "`break parse_number` in a cJSON test shows <MULTIPLE> with four locations after run. Where are they, and how do you restrict it?"
-    answer: "The test executable's own copy (tests include ../cJSON.c), libcjson.so, and two in the ASan runtime's internal format parser. Use break cJSON.c:parse_number."
+    prompt: "`break parse_number` in a cJSON test shows <MULTIPLE> locations after run. Where are they, and how do you restrict it?"
+    answer: "The test executable's own copy (tests include ../cJSON.c), libcjson.so, and several in the sanitizer runtime's internal format parser. Use break cJSON.c:parse_number."
   - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c16
     type: procedure
     prompt: "Count how many times a function is called in a full run with gdb, without stopping at each call."
@@ -75,3 +75,19 @@ cards:
     type: concept
     prompt: "A cJSON test passes under ctest but fails when you run the binary by hand from the build root. Most likely cause?"
     answer: "Working directory. ctest runs each test in its registered directory (build/tests); the test opens inputs/... by relative path, which does not exist from the build root."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c19
+    type: procedure
+    prompt: "On a stripped ASan binary, plain nm prints 'no symbols'. How do you still check for ASan and UBSan instrumentation, and why does that work?"
+    answer: "nm -D prog | grep -c __asan_report (and __ubsan_handle). The calls into the sanitizer runtimes are dynamic imports, which strip does not remove. ldd still shows the runtimes."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c20
+    type: concept
+    prompt: "An ASan binary built without -g has .debug_info sections and `file` says 'with debug_info'. Where does that DWARF come from, and how do you test for the program's own debug info?"
+    answer: "From libasan's statically linked asan_preinit object. Check the program's own compile unit: readelf --debug-dump=info shows only libsanitizer DW_AT_name entries, and gdb -batch -ex 'info line main' reports no line number information."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c21
+    type: procedure
+    prompt: "At -O2, `break cJSON.c:parse_number` fails because the function was inlined. How do you still stop inside it?"
+    answer: "Break on a source line inside its body that has code (in the lab, cJSON.c:308; its first line 306 has 'No compiled code'). gdb stops with parse_number shown as an inline frame, with arguments often <optimized out>."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c22
+    type: procedure
+    prompt: "Keep a stripped binary debuggable: give the objcopy/strip sequence, and where the debug file must be for gdb to find it."
+    answer: "objcopy --only-keep-debug pe pe.debug; strip pe; objcopy --add-gnu-debuglink=pe.debug pe. Put pe.debug next to the binary, in <bindir>/.debug/, or under the debug-file directory (/usr/lib/debug). The current directory alone does not work."

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Build the base image, then the FND-02 image. Honours ENGINE.
 # IPERF=1    also builds osvr-fnd02-iperf:1 (iperf with ASan at 4eab661d and 4e5313ba, libssl-dev; needs the network,
-#            about 1 to 3 minutes) on top of the osvr-fnd02:1 just built. Needed for the real-bug harness step.
+#            about 30 s to 3 min) on top of the osvr-fnd02:1 just built. Needed for the real-bug harness step.
 # NO_CACHE=1 builds osvr-fnd02:1 (and the iperf image, with IPERF=1) with --no-cache. The shared base image
 #            osvr-fnd-base:1 is built only if missing (or with BASE=1, which rebuilds it with the same flags).
 # The whole log is tee'd to ~/osvr-work/fnd02/build-logs/build-<UTC timestamp>.log and the path is printed.

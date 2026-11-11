@@ -37,7 +37,7 @@ A module is done when you meet the pass criteria in `rubric.md`, not when you ha
 
 ## Progress of the curriculum itself
 
-1 ready, 2 in draft, 62 not written yet, out of 65 modules.
+2 ready, 2 in draft, 61 not written yet, out of 65 modules.
 
 Core path: 656 hours (about 15 months at 10 h/week), plus 30 h if you need the programming on-ramp.
 
@@ -49,9 +49,9 @@ Take these top to bottom. Hours include drills and the project. PRO modules are 
 |---|---|---|---|---|---|
 | 1 | [`FND-01-linux-lab-and-learning-protocol`: Linux workstation, the OSVR lab and the session protocol](tracks/FND/modules/FND-01-linux-lab-and-learning-protocol/README.md) | FND | 8 | 8 | ready |
 | (if needed) | `FND-00-programming-on-ramp`: Programming on-ramp in C: write, compile and debug small programs<br>*Only if the learner fails the FND-00 diagnostic (taken after FND-01, linked from FND-02 prerequisite check)* | FND | 30 | - | not written yet |
-| 2 | [`FND-02-c-pointers-and-memory`: C I: pointers, arrays, strings and where objects live](tracks/FND/modules/FND-02-c-pointers-and-memory/README.md) | FND | 18 | 26 | draft, not yet audited |
+| 2 | [`FND-02-c-pointers-and-memory`: C I: pointers, arrays, strings and where objects live](tracks/FND/modules/FND-02-c-pointers-and-memory/README.md) | FND | 18 | 26 | ready |
 | 3 | [`FND-03-building-and-debugging-with-gdb-and-sanitizers`: Building real C projects and debugging them with gdb and sanitizers](tracks/FND/modules/FND-03-building-and-debugging-with-gdb-and-sanitizers/README.md) | FND | 10 | 36 | draft, not yet audited |
-| 4 | `FND-04-first-cve-crash-reproduction`: Reproduce a real CVE crash and root-cause it to the line | FND | 6 | 42 | not written yet |
+| 4 | [`FND-04-first-cve-crash-reproduction`: Reproduce a real CVE crash and root-cause it to the line](tracks/FND/modules/FND-04-first-cve-crash-reproduction/README.md) | FND | 6 | 42 | draft, not yet audited |
 | 5 | `PRO-01-ethics-scope-and-legal-landscape`: Ethics, scope and the legal landscape for research | PRO | 4 | 46 | not written yet |
 | 6 | `PRO-02-advisories-cve-and-cwe`: Reading advisories, the CVE system and CWE | PRO | 5 | 51 | not written yet |
 | 7 | `FND-05-c-structs-integers-and-undefined-behaviour`: C II: structs, dynamic memory, integer semantics and undefined behaviour | FND | 18 | 69 | not written yet |

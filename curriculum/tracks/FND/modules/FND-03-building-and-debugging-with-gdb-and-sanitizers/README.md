@@ -5,7 +5,7 @@ Outcomes: find, rootcause
 
 In FND-02 you compiled one file with one `gcc` line. Real targets are dozens of files driven by a build system you did not write, with its own idea of which flags matter. This module teaches you to take an unfamiliar C project at a pinned commit, get AddressSanitizer (ASan), UndefinedBehaviorSanitizer (UBSan) and debug symbols into **every** object it builds, prove that you did, run its test suite under the sanitizers, and then drive gdb through its code to answer questions about runtime state. The codebase is cJSON at tag `v1.7.17`, the same tree your FND-01 lab used for its smoke test. You do not root-cause that CVE here. You learn to build and walk the code around it.
 
-Hour budget (pilot parameter): about 1 h prerequisite check and worked example reading, 1.5 h worked example hands-on, 1.25 h struggle challenge, 1.5 h theory, 2 h drills, 3 h project.
+Hour budget (pilot parameter): about 1 h prerequisite check and worked example reading, 1.5 h worked example hands-on, 1.25 h struggle challenge, 1.5 h theory, 2 h for the first rep of each drill, 3 h project. The later drill reps ("Owned when" in `drills.md`) are spread across later sessions and are not inside this budget.
 
 Conventions from FND-01 and FND-02 carry over. Set these once per terminal, from the repo root:
 
@@ -23,11 +23,13 @@ The lab image is `osvr-fnd03:1`, built `FROM osvr-fnd-base:1` (the shared FND ba
 ASLR_OFF=1 "$M/lab/run.sh" # same, plus --security-opt seccomp=unconfined so gdb can disable ASLR
 ```
 
-> needs-lab-verification: Docker is untested. Under rootless podman, gdb works with default flags and only ASLR disabling needs `seccomp=unconfined` (`labs/shared/fnd-base/README.md`). Under Docker, gdb may also need `--cap-add=SYS_PTRACE`; `run.sh` records what the lab-engineer found.
+The lab is verified on rootless podman 6.1.4 (`lab/README.md`). `run.sh` starts the container with `--network=none --cap-drop=ALL`, and gdb and ASan both work like that. Without `ASLR_OFF=1`, gdb prints its ASLR warning and runs with ASLR on.
 
-Inside the container, a full clone of cJSON sits at `/src/cjson`, checked out at commit `87d8f0961a01bf09bef98ff89bae9fdec42181ee` (tag `v1.7.17`, `research/targets/FND.md`). Treat `/src/cjson` as read-only. Copy it into `/work/fnd03` before you build, so your builds survive the container.
+> needs-lab-verification: Docker is untested: whether `--user`, `--cap-add=SYS_PTRACE` or a seccomp change are needed for gdb, and whether LeakSanitizer behaves the same. SELinux hosts may need `:Z` on the mount (also untested).
 
-Every output in this README was produced by the module-builder on 2026-11-11 inside images derived from `osvr-fnd-base:1` under rootless podman (gcc 14.2.0-19, gdb 16.3, cmake 3.31.6). Paths are rewritten to the lab layout. Addresses will differ on your machine; anything else that differs is worth writing down. The lab-engineer re-confirms these in `lab/SPEC.md`.
+Inside the container, a full clone of cJSON sits at `/src/cjson`, checked out at commit `87d8f0961a01bf09bef98ff89bae9fdec42181ee` (tag `v1.7.17`, `research/targets/FND.md`). Treat `/src/cjson` as read-only. Copy it into `/work/fnd03` before you build, so your builds survive the container. `cp -a` keeps the read-only modes and the lab drops all capabilities, so make the copy writable straight after: `chmod -R u+w <copy>`.
+
+Every output in this README was produced by the module-builder on 2026-11-11 inside images derived from `osvr-fnd-base:1` under rootless podman (gcc 14.2.0-19, gdb 16.3, cmake 3.31.6). Paths are rewritten to the lab layout. Addresses will differ on your machine; anything else that differs is worth writing down. The lab-engineer re-measured them in `osvr-fnd03:1` (`lab/SPEC.md`, Implementation notes). Where the two disagreed, this README uses the lab's measured values.
 
 gdb note: the base image loads GEF for every gdb session. GEF's context pane is useful later (FND-06). For the transcripts in this module, start gdb as `gdb -nx` so you get plain gdb output that matches the text.
 
@@ -44,7 +46,7 @@ After this module you can:
 - **cJSON CVE-2023-53154** (MITRE record; `research/targets/FND.md`): the over-read your FND-01 lab reproduces exits 0 with an empty report when the harness is built without `-fsanitize=address` (FND-01 lab, verified). Without a working sanitizer build, the bug has no visible symptom.
 - **cJSON issue 800**, the upstream report of that bug: the project's existing fuzz target hid it, because the harness rejected inputs that did not end in a NUL byte (`research/targets/FND.md`). The bug was in the library; whether anyone could see it depended on how the test was built and fed.
 - **Mozilla Bugzilla 1545095** (2019): ASan builds in Mozilla's CI hit a LeakSanitizer fatal error that the patch attributed to ptrace restrictions in newer Docker; the fix disabled leak detection in those builds (`research/domain-maps/foundations.md`, FND-01 lab sources). The debugger and container environment change what a sanitizer build does.
-- Practitioner reports filed in `research/FIELD-SYNTHESIS.md` (finding 5): environment setup routinely costs more than finding the bug. Building the target with the right instrumentation is that setup.
+- Practitioner reports filed in `research/FIELD-SYNTHESIS.md` (finding 5, anecdotes rather than measurements): environment setup can cost more than finding the bug. Building the target with the right instrumentation is that setup.
 
 ## Mitigation context
 FND-03 bypasses nothing. You need to know what is switched on in your builds, because the sanitizer build you make for finding bugs is not the hardened build that ships.
@@ -52,11 +54,11 @@ FND-03 bypasses nothing. You need to know what is switched on in your builds, be
 | Mitigation / mechanism | On in this module? | What it does | How this module deals with it |
 |---|---|---|---|
 | AddressSanitizer (ASan) | Yes, in every build you make, if you get it right | Detection, not mitigation. Instrumentation before each memory access plus a replacement allocator; reports at the bad access (Clang ASan docs). Not for production; about 2x slowdown | Objective 2 is proving it is really there. Theory explains the shadow check from disassembly |
-| UBSan | Yes, with ASan | Detection. Compile-time checks that call a runtime handler. Recovers (prints and continues) by default for everything except `address` (GCC Instrumentation Options) | You make it fatal with `-fno-sanitize-recover=undefined` so a finding fails the test |
+| UBSan | Yes, with ASan | Detection. Compile-time checks that call a runtime handler. Recovers (prints and continues) by default, except for the `unreachable` and `return` checks, which never recover (GCC Instrumentation Options; for ASan recovery is off by default) | You make it fatal with `-fno-sanitize-recover=undefined` so a finding fails the test |
 | Stack protector (canary) | Not by default in the lab's bare gcc (derived: `gcc -Q --help=common` shows `-fstack-protector-strong [disabled]`; a plain build references no `__stack_chk_fail`). Projects often add it themselves | Detects contiguous stack overwrites at function return | You read the project's build files to see whether it adds the flag, and notice when your flag injection removes it |
 | PIE + ASLR | PIE is on by default (derived: `gcc -v` shows `--enable-default-pie`). ASLR is the host kernel's | Randomises load addresses per run | gdb cannot disable ASLR under the lab's default seccomp profile (it warns `Error disabling address space randomization: Function not implemented`). Compare by symbol and offset. Use `ASLR_OFF=1 "$M/lab/run.sh"` only for drills that need fixed addresses |
 | NX, partial RELRO | On by default (derived: `GNU_STACK RW`, `GNU_RELRO` present, no `BIND_NOW`) | Non-executable stack; read-only relocations after load | Not studied here. FND-07 |
-| CET branch protection (`-fcf-protection`) | On by default in the lab's gcc (derived: `gcc -Q --help=common` shows `-fcf-protection=full`) | Marks valid indirect-branch targets; needs CPU and kernel support to enforce | Not studied here. Named so you are not surprised by `endbr64` at function starts in disassembly |
+| CET branch protection (`-fcf-protection`) | On by default in the lab's gcc (derived: `gcc -Q --help=common` shows `-fcf-protection=full`) | Marks valid indirect-branch targets (`endbr64`) and emits shadow-stack-compatible code; nothing is enforced without CPU, kernel and libc support | Not studied here. Named so you are not surprised by `endbr64` at function starts in disassembly. needs-lab-verification: which parts (shadow stack, indirect-branch tracking) the learner's kernel and glibc actually enforce for user programs; no source on this is filed |
 | `_FORTIFY_SOURCE` | Off in all FND-03 builds | Adds bounds checks to some libc calls when sizes are known at compile time; needs `-O1` or higher | Incompatible with sanitizers (OpenSSF hardening guide). The compiler does not stop you: a `-O1 -fsanitize=address -D_FORTIFY_SOURCE=2` build compiles without error (derived). Leave it off |
 
 ## Prerequisite check
@@ -80,13 +82,13 @@ Closed-book, under 10 minutes. FND-02 told you to bring your `challenge.md` and 
 </details>
 
 ## Worked example
-**Instance:** cJSON's **Makefile** build of its demo program `cJSON_test` (`test.c` plus `cJSON.c`, one `gcc` invocation, one executable). The struggle challenge uses a different build system (CMake), a different set of binaries (the project's 18 Unity test programs plus a shared library), a different function, and its own traps. Read every subgoal. Type every command yourself.
+**Instance:** cJSON's **Makefile** build of its demo program `cJSON_test` (`test.c` plus `cJSON.c`, one `gcc` invocation, one executable), then, in Subgoal 8, a CMake build of the shared library alone with the tests switched off. The struggle challenge uses CMake on the whole test suite: a different set of binaries (19 registered tests: the 18 Unity test programs plus a CMake-built `cJSON_test`, and a shared library), a different function, and its own traps. Read every subgoal. Type every command yourself.
 
 ### Subgoal 1. Pin: start from a known commit
 Goal: a private, writable copy of the source at the pinned commit, with proof.
 
 ```sh
-cp -a /src/cjson /work/fnd03/we && cd /work/fnd03/we
+cp -a /src/cjson /work/fnd03/we && chmod -R u+w /work/fnd03/we && cd /work/fnd03/we
 git rev-parse HEAD          # 87d8f0961a01bf09bef98ff89bae9fdec42181ee
 git status --short          # empty: no local changes
 ```
@@ -217,6 +219,37 @@ Three ways to run it under gdb, observed:
 
 The breakpoint name encodes the access: `store` for a write, `load` for a read, and the width in bytes (`store1`, `load4`, ...). `nm ./prog | grep __asan_report` lists exactly which ones your program can call. When you do not know the access type, use `abort_on_error=1`.
 
+### Subgoal 8. The same loop through CMake, on the library alone
+Goal: inject, record and verify through CMake, on a different target from the challenge: the shared library `libcjson.so` only, with the tests switched off. Whether CMake's own options can be trusted is the challenge's business; here you pass the flags yourself.
+
+```sh
+cd /work/fnd03/we
+cmake -S . -B build-lib -DCMAKE_BUILD_TYPE=Debug -DENABLE_CJSON_TEST=OFF \
+      -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+      -DCMAKE_C_FLAGS="-g -O0 -fno-omit-frame-pointer -fsanitize=address,undefined"
+cmake --build build-lib --target cjson
+```
+
+The configure prints a `CMake Deprecation Warning` about `cmake_minimum_required`. It is harmless (Common failure points).
+
+- **Configure vs build.** The first command only *configures*: it writes `build-lib/` and the cache `build-lib/CMakeCache.txt`, where your flags now sit (`grep '^CMAKE_C_FLAGS:' build-lib/CMakeCache.txt` gives `CMAKE_C_FLAGS:STRING=-g -O0 -fno-omit-frame-pointer -fsanitize=address,undefined`). The second command runs the generated build, for the one target `cjson`.
+- **Record.** `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON` wrote `build-lib/compile_commands.json`, one entry per compiled file. With tests off there is exactly one, for `cJSON.c`:
+
+```text
+"command": "/usr/bin/cc -DCJSON_API_VISIBILITY -DCJSON_EXPORT_SYMBOLS -DENABLE_LOCALES -Dcjson_EXPORTS  -g -O0 -fno-omit-frame-pointer -fsanitize=address,undefined -std=c89 -pedantic -Wall -Wextra -Werror ... -fstack-protector-strong ... -fvisibility=hidden  -g -fPIC -o CMakeFiles/cjson.dir/cJSON.c.o -c /work/fnd03/we/cJSON.c"
+```
+
+  Your flags come first, then the project's own (`-Werror`, `-fstack-protector-strong`, ...), then the build type's `-g` and `-fPIC`. Order matters when two flags conflict (Theory).
+- **Verify.** A shared library's imports are dynamic symbols, so use `nm -D`:
+
+```sh
+nm -D build-lib/libcjson.so.1.7.17 | grep -c __asan_report    # 8
+nm -D build-lib/libcjson.so.1.7.17 | grep -c __ubsan_handle   # 5
+ldd build-lib/libcjson.so.1.7.17 | grep -E 'asan|ubsan'      # libasan.so.8, libubsan.so.1
+```
+
+(All measured in `osvr-fnd03:1`.) That is the triple again, through a different door. In the challenge you will need it for many binaries, not one.
+
 ## Struggle challenge
 Attempt this closed-book before reading further. Timebox: 75 minutes (pilot parameter; log your actual time before first hint). Write down what you tried, even if you fail. Run it as one protocol session (FND-01).
 
@@ -224,7 +257,7 @@ Closed-book means: no Theory or Walkthrough below. You may use `--help`, `man`, 
 
 **Task.** Build cJSON `v1.7.17` with **CMake** and debug its test suite.
 
-1. **Build.** Copy `/src/cjson` to `/work/fnd03/cjson`. Configure an out-of-tree build in `/work/fnd03/cjson/build-asan` with tests enabled, in which every test program and the cJSON code inside it is built with ASan, UBSan, `-g`, `-O0` and `-fno-omit-frame-pointer`, and in which any UBSan finding aborts the program. cJSON's own `README.md` offers a way to turn sanitizers on. Use whatever route you like, but your evidence (step 2) has to prove the result.
+1. **Build.** Copy `/src/cjson` to `/work/fnd03/cjson`. Configure an out-of-tree build in `/work/fnd03/cjson/build-asan` with tests enabled, in which every test program and the cJSON code inside it is built with ASan, UBSan, `-g`, `-O0` and `-fno-omit-frame-pointer`, and in which any UBSan finding aborts the program. The build must also write `compile_commands.json`: the checker reads the flags your build actually used from it. cJSON's own `README.md` offers a way to turn sanitizers on. Use whatever route you like, but your evidence (step 2) has to prove the result.
 2. **Prove it.** In `/work/fnd03/challenge/evidence.txt`, for the test program `tests/parse_examples` and for the object file built from `cJSON.c` for the shared library: the compile command, the `nm` counts for `__asan_report` and `__ubsan_handle`, and the `ldd` lines for the sanitizer runtimes. If at any point a build you made did *not* have ASan, record that too, with the evidence that showed it and the reason you found.
 3. **Test.** Run the whole suite with `ctest` and record the summary line.
 4. **Debug.** Run `tests/parse_examples` under gdb and stop the **first** time `parse_number` (in `cJSON.c`) is entered. Write `/work/fnd03/challenge/answers.md` with exactly these four lines, filled in from gdb output:
@@ -235,7 +268,7 @@ Closed-book means: no Theory or Walkthrough below. You may use `--help`, `man`, 
    parsed_value: <the number stored in the node after parse_number returns>
    ```
    Then, under those lines, paste the gdb transcript that proves each answer, and list every location your breakpoint resolved to, saying which binary or library each lives in and which one was actually hit.
-5. Check: `"$M/lab/check.sh" challenge` (on the host). It checks the build, the instrumentation and your four answers. It does not tell you what is wrong beyond which check failed.
+5. Check: `"$M/lab/check.sh" challenge` (on the host). It mounts your files read-only and never changes them. It checks the build, the instrumentation of every registered test executable and `libcjson.so`, that UBSan findings are fatal (it rebuilds a small UBSan tripwire with the flags your build actually used, taken from `compile_commands.json`), that every test passes, and your four answers. `PASS  ubsan fatal: tripwire built with the flags your build used exits 1 with a runtime error line` It has no stored answer key: it runs gdb on *your* `parse_examples` and compares. It does not tell you what is wrong beyond which check failed.
 
 Success: `check.sh challenge` exits 0, and `evidence.txt` plus the transcript in `answers.md` would convince a sceptic without them rerunning anything.
 
@@ -258,7 +291,7 @@ Get one without the other and you get a build that looks right and is not. Deriv
 
 The second row is the dangerous one. The runtime is loaded, `ASAN_OPTIONS=help=1` works, and nothing is checked. That is why "is `libasan` linked?" is not enough evidence on its own.
 
-`-g` is a compile-time flag (debug info goes into each `.o`). `-O0` and `-fno-omit-frame-pointer` are compile-time too. The Clang ASan docs recommend `-g`, `-fno-omit-frame-pointer` and at least `-O1` for speed; OSVR uses `-O0` for the first builds of a target because every variable stays inspectable in gdb, and switches to `-O1` when speed matters (fuzzing, VD track). ASan cannot be linked statically: gcc refuses with `cannot specify -static with -fsanitize=address` (derived; the Clang ASan docs also say static linking is unsupported).
+`-g` is a compile-time flag (debug info goes into each `.o`). `-O0` and `-fno-omit-frame-pointer` are compile-time too. The Clang ASan docs recommend at least `-O1` for speed and `-fno-omit-frame-pointer` for good stack traces, and use `-g` in their example; OSVR uses `-O0` for the first builds of a target because every variable stays inspectable in gdb, and switches to `-O1` when speed matters (fuzzing, VD track). An ASan executable cannot be linked fully statically: gcc refuses `-static` with `cannot specify -static with -fsanitize=address` (derived; the Clang ASan docs also say static linking is unsupported). gcc has a separate `-static-libasan`, which links only the ASan runtime statically into a dynamically linked program; this module does not use it (needs-lab-verification: its behaviour in the lab).
 
 ### Make and CMake, as a researcher needs them
 You need two things from any build system: where your flags enter, and how to see the command it really ran.
@@ -279,7 +312,7 @@ Facts that cost beginners hours (all derived from cJSON's build in the lab):
 - `ctest`, run inside the build directory, runs every test the project registered with `add_test`. Each test runs with its own working directory. Running a test binary by hand from somewhere else can fail for reasons that have nothing to do with the code.
 - Feature checks are themselves small builds. With this lab's CMake (3.31.6) their logs go to `<builddir>/CMakeFiles/CMakeConfigureLog.yaml`. When a check fails, the log has the compiler's actual error.
 
-> TODO(research): no CMake or GNU make documentation is filed in `research/`. Every CMake and make behaviour above is derived from runs in the lab, not from the manuals. File the CMake reference pages for `CMAKE_C_FLAGS`, `CheckCCompilerFlag`, `CMAKE_EXPORT_COMPILE_COMMANDS`, `CMakeConfigureLog.yaml` and `ctest`, and the GNU make manual section on overriding variables.
+> Sources (`resources.yaml`): the GNU make manual's *Overriding Variables* (command-line assignments win over the Makefile's, unless it uses `override`) and *Variables Used by Implicit Rules* (`CFLAGS`, `LDFLAGS`, `LDLIBS`); CMake's `CMAKE_<LANG>_FLAGS` (initialised from the `CFLAGS` environment variable), `CMAKE_EXPORT_COMPILE_COMMANDS` (Makefile and Ninja generators only), `cmake-configure-log(7)` (CMake 3.26 and later), `add_test` (tests run in `CMAKE_CURRENT_BINARY_DIR` unless `WORKING_DIRECTORY` is given) and `CheckCCompilerFlag`. One thing the docs do **not** say: `CheckCCompilerFlag` does not state whether the flag under test reaches the link step. That it does not, for cJSON's check with this CMake, is a lab observation from the configure log (Walkthrough, step 2).
 
 ### How ASan decides an access is bad: derive it from the code
 FND-02 said ASan reports at the access by checking each access against marks around every object. Here is the mechanism, read straight from what the compiler emitted. Build the tripwire with ASan and disassemble `main` (`objdump -d -M intel --no-show-raw-insn tripwire`, or `disassemble` in gdb). The store `p[8] = 1` became (derived, gcc 14.2.0, `-O0`):
@@ -309,16 +342,17 @@ So, derived from this code:
 - Every 8 bytes of application memory have **one shadow byte** at `(addr >> 3) + 0x7fff8000`. The report's legend says the same: "one shadow byte represents 8 application bytes". The constant is the shadow offset this gcc build uses on x86-64 Linux.
 - Shadow `00` means all 8 bytes are addressable. A value `k` from 1 to 7 means only the first `k` bytes are ("Partially addressable: 01 02 ... 07" in the legend). Other values mark unaddressable memory, and the value says why: `fa` heap left redzone, `fd` freed heap region, `f1`/`f2`/`f3` stack redzones, `f9` global redzone (all from the report legend).
 - For a 1-byte access, the check is "shadow non-zero **and** `(addr & 7) >= k`". For a 4-byte store the compiler emits the same sequence with an extra `add esi,0x3`: it tests the access's **last** byte, `(addr & 7) + 3 >= k` (derived from an `int` store). An access is bad if any byte it touches is beyond the addressable prefix.
+- You can check the formula live. The rows of a report's shadow map are labelled with **application** addresses (`=>0x502000000000:`), not shadow addresses, so you compute the shadow address yourself. Measured in the lab at `break __asan_report_store1` on the tripwire: `addr` = `0x502000000018`, `p/x (addr >> 3) + 0x7fff8000` = `0xa047fff8003`, and `x/1xb 0xa047fff8003` reads `0xfa`. The shadow byte for the 8 valid bytes before it reads `0x00`.
 - The allocator is ASan's own. It surrounds each heap block with redzones and marks them in shadow. `malloc(8)` gives shadow `00` then `fa`; `malloc(5)` gives `05` then `fa` (both derived; look for the `=>` line under "Shadow bytes around the buggy address" in your FND-02 report: `fa fa[05]fa`).
 
 Now FND-02's blind spots follow from the mechanism instead of being a list to memorise. Intra-object overflow is invisible because the whole struct is one allocation with shadow `00`; there is no redzone between its members. A read of uninitialised heap memory is invisible because addressable-but-unwritten bytes have shadow `00` too (ASan only fills them with `0xbe`). And code compiled without `-fsanitize=address` has no check sequence at all, whatever runtime is linked.
 
-> TODO(research): the ASan paper's PDF (shadow mapping, redzones, quarantine) is filed only by its abstract page. Every mechanism statement above is derived from the disassembly and report legend in the lab. Fetch the paper PDF or the sanitizers project's algorithm page so this section can cite a primary source, including the freed-memory quarantine, which this module does not teach.
+> Sources (`resources.yaml`): the sanitizers project's *AddressSanitizerAlgorithm* page gives the same mapping for 64-bit, `Shadow = (Mem >> 3) + 0x7fff8000`, and describes the redzones. The lab disassembly and gdb above confirm that offset for this gcc build. The same page describes one more piece you will meet in use-after-free reports: on `free`, ASan poisons the block's shadow (`fd`, "Freed heap region") and holds the block in a **quarantine** queue for a while, so `malloc` does not hand the same memory out again at once and a later access to it is still caught.
 
 ### UBSan: checks at the operation, recovery by default
 UBSan instruments operations whose behaviour C leaves undefined: signed overflow, out-of-range shifts, indexing past a declared array size, misaligned or null pointer use, and others (GCC Instrumentation Options lists the sub-checks). Each check calls a `__ubsan_handle_*` function when it fails. Two consequences:
-- **It prints and keeps going by default.** GCC's docs say recovery is on by default for every sanitizer except `address`. Derived: a signed `INT_MAX + 1` built with `-fsanitize=undefined` prints `runtime error: signed integer overflow` and exits 0. With `-fno-sanitize-recover=undefined` (or the bare `-fno-sanitize-recover`) it exits 1. In a test suite, recovering means a finding scrolls past inside a passing test. Make it fatal.
-- **It knows types, not allocations.** That is why it sees `r.buf[8]` (it knows `buf` is `char[8]`) and is silent about a heap block's end (there is no declared array type). ASan is the opposite. Use both.
+- **It prints and keeps going by default.** GCC's docs say UBSan's checks recover by default, except `unreachable` and `return`, which never recover; for ASan recovery is off by default. Derived: a signed `INT_MAX + 1` built with `-fsanitize=undefined` prints `runtime error: signed integer overflow` and exits 0. With `-fno-sanitize-recover=undefined` (or the bare `-fno-sanitize-recover`) it exits 1. In a test suite, recovering means a finding scrolls past inside a passing test. Make it fatal.
+- **It knows types, not allocations.** That is why it sees `r.buf[8]` (it knows `buf` is `char[8]`) and, in the `-O0` builds of this module, is silent about a heap block's end (there is no declared array type). ASan is the opposite. Use both. (GCC's `-fsanitize=object-size` check, part of `undefined`, can catch some overruns of objects whose size the compiler can work out, but only when optimising; needs-lab-verification: whether it fires on a heap off-by-one at `-O1` in the lab.)
 
 ### gdb, as a researcher uses it
 gdb starts (or attaches to) a program under `ptrace`, the kernel interface that lets one process stop, inspect and modify another. Breakpoints, stepping and memory reads are all ptrace operations. The parts that matter in this module (behaviour observed in the lab; the gdb manual in `resources.yaml` is the reference):
@@ -338,7 +372,7 @@ Reference solution for the struggle challenge, run in the lab on 2026-11-11.
 **1. Try the documented route.** cJSON's `README.md` line 115 documents `-DENABLE_SANITIZERS=On`, "Compile cJSON with AddressSanitizer and UndefinedBehaviorSanitizer enabled (if possible)".
 
 ```sh
-cp -a /src/cjson /work/fnd03/cjson && cd /work/fnd03/cjson
+cp -a /src/cjson /work/fnd03/cjson && chmod -R u+w /work/fnd03/cjson && cd /work/fnd03/cjson
 cmake -S . -B build-doc -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON -DENABLE_CJSON_TEST=ON \
       -DCMAKE_C_FLAGS="-g -O0 -fno-omit-frame-pointer"
 cmake --build build-doc -j4 && (cd build-doc && ctest | tail -3)
@@ -394,11 +428,14 @@ grep -n -A12 'FLAG_SUPPORTED_fsanitizeaddress"' build-doc/CMakeFiles/CMakeConfig
 ```
 
 ```text
-/usr/bin/cc -DFLAG_SUPPORTED_fsanitizeaddress ... -fsanitize=address -o CMakeFiles/cmTC_....dir/src.c.o -c .../src.c
-src.c:1:(.text+0x10): undefined reference to `__asan_init'
+/usr/bin/cc -DFLAG_SUPPORTED_fsanitizeaddress  -g -O0 -fno-omit-frame-pointer -std=c89 -pedantic ... -fno-omit-frame-pointer    -fsanitize=address -o CMakeFiles/cmTC_9c928.dir/src.c.o -c /work/fnd03/cjson/build-doc/CMakeFiles/CMakeScratch/TryCompile-2J66aZ/src.c
+/usr/bin/cc -g -O0 -fno-omit-frame-pointer -std=c89 -pedantic ... -fno-omit-frame-pointer  -rdynamic CMakeFiles/cmTC_9c928.dir/src.c.o -o cmTC_9c928
+.../src.c:1:(.text+0x10): undefined reference to `__asan_init'
+/usr/bin/ld: .../src.c:1:(.text+0x15): undefined reference to `__asan_version_mismatch_check_v8'
+collect2: error: ld returned 1 exit status
 ```
 
-The check compiled its test program **with** `-fsanitize=address` and linked it **without**. That is row 3 of the table in Theory: an instrumented object linked without the runtime fails to link. CMake concluded that gcc does not support the flag. The other two failures are honest: `-01` is a typo for `-O1` (digit zero, not letter O; it was removed upstream before v1.7.18, find the commit with `git log -S'-01' -- CMakeLists.txt`), and `-fsanitize=integer` is a Clang-only option (`research/targets/FND.md`).
+(`...` elides the long run of warning flags; the `cmTC_` and `TryCompile-` suffixes are random per configure.) Line 1 is the compile: `-fsanitize=address` is the last flag. Line 2 is the link: the same flags, **without** `-fsanitize=address`. The check compiled its test program **with** the flag and linked it **without**. That is row 3 of the table in Theory: an instrumented object linked without the runtime fails to link. CMake concluded that gcc does not support the flag. The other two failures are honest: `-01` is a typo for `-O1` (digit zero, not letter O; it was removed upstream before v1.7.18; from the pinned, detached checkout you need `git log --all -S'-01' -- CMakeLists.txt` to see the commits that added and removed it), and `-fsanitize=integer` is a Clang-only option (`research/targets/FND.md`).
 
 **3. Build it properly.** Put the sanitizer flags in `CMAKE_C_FLAGS`, so they reach every compile **and** every link, including the feature checks. Use a new build directory: the old cache would keep its failed check results.
 
@@ -417,7 +454,7 @@ cd build-asan
 grep -o '"command": "[^"]*parse_examples.c[^"]*"' compile_commands.json
 grep -o '"command": "[^"]*cjson.dir/cJSON.c.o[^"]*"' compile_commands.json
 nm tests/parse_examples | grep -c __asan_report                # 9
-nm tests/parse_examples | grep -c __ubsan_handle               # > 0
+nm tests/parse_examples | grep -c __ubsan_handle               # 10
 nm CMakeFiles/cjson.dir/cJSON.c.o | grep -c __asan_report      # 8
 ldd tests/parse_examples | grep -E 'asan|ubsan|cjson'
 ```
@@ -493,7 +530,7 @@ Why not test1? `test1` and `test2` are parsed first, but they contain no JSON nu
 
 **Why the breakpoint has two locations.** `tests/common.h` line 26 is `#include "../cJSON.c"`, and every Unity test source includes `common.h` (all except `unity_setup.c`, derived with `grep -L`). So each test program compiles its **own copy** of the whole library, which lets it test `static` functions, and it also links `libcjson.so`. Location 1.1 is the copy inside `parse_examples`, 1.2 is the one in `libcjson.so.1`, and the stop happened at 1.1 (`info symbol $pc` names `.../tests/parse_examples`). The test code calls its own copy. Consequence for step 2: the evidence that matters for the tests is instrumentation **inside the test executable**. A sanitized `libcjson.so` alone would not have covered them.
 
-If you wrote `break parse_number` without the file, `info breakpoints` after `run` lists two more locations, in `sanitizer_common_interceptors_format.inc`: the ASan runtime has its own internal `parse_number`. With an ignore count, `break parse_number` counted 74 hits in a full run of `parse_examples` and `break cJSON.c:parse_number` counted 62 (derived). The 12 extra were not cJSON. Always scope a breakpoint when the name is common.
+If you wrote `break parse_number` without the file, `info breakpoints` at the first stop lists more locations in `sanitizer_common_interceptors_format.inc`: the sanitizer runtime has its own internal `parse_number`. On the reference `build-asan` the audit measured 8 locations in total: 1.1 in the executable, 1.2 in `libcjson.so.1`, 1.3 to 1.8 in the runtime. Do not memorise the count; it depends on the runtime build. With an ignore count, `break parse_number` counted 74 hits in a full run of `parse_examples` and `break cJSON.c:parse_number` counted 62 (derived). The 12 extra were not cJSON. Always scope a breakpoint when the name is common.
 
 ## Consolidation
 Put your `evidence.txt` and `answers.md` next to the walkthrough. For each subgoal (Pin, Recon, Inject, Verify, Test, Debug), write three short lines: what you did, what the reference does, and the gap in one line. Typical gaps worth a card:
@@ -513,6 +550,8 @@ Add each gap with `python3 scripts/srs.py add ...`, and log time-to-first-hint (
 | "Sanitizers on", tests pass, but `nm prog \| grep -c __asan_report` is 0 | The flag never reached the compile (dropped by a feature check, overridden, or added only at link) | `grep FLAG_SUPPORTED_ build/CMakeCache.txt`; read the command in `compile_commands.json` or `cmake --build build -v` |
 | `ldd` shows `libasan` but a known overflow is not reported | Runtime linked, code not instrumented (compiled without `-fsanitize=address`) | `nm prog \| grep -c __asan_report` (0); check the object's own compile command |
 | Link error `undefined reference to '__asan_init'` | Objects compiled with `-fsanitize=address`, final link without it | `cmake --build build -v` and read the link line. Put the flag in `CMAKE_C_FLAGS` (compile and link) |
+| Every `cmake` configure of cJSON prints `CMake Deprecation Warning at CMakeLists.txt:2 (cmake_minimum_required):` followed by `Compatibility with CMake < 3.10 will be removed from a future version of ...` (measured) | cJSON declares an old minimum CMake version | Harmless here. It is a warning, not an error, and changes nothing in the build |
+| `mkdir: cannot create directory '.../build': Permission denied` right after `cp -a /src/cjson ...`, or hundreds of `Permission denied` lines from `rm -rf` on an old copy | `/src/cjson` is made read-only in the image, `cp -a` preserves those modes, and `run.sh` drops all capabilities, so even root cannot write to a mode `r-x` directory | `chmod -R u+w <copy>` straight after every copy, and before removing an old copy |
 | Changed `-D...` flags, nothing changed | Old cache in the build directory | Use a new `-B` directory, or delete it. `grep CMAKE_C_FLAGS: build/CMakeCache.txt` |
 | Build fails with `-Werror=...` after adding flags (for example `null destination pointer [-Werror=format-overflow=]` at `-O2` with sanitizers, derived) | The project's `-Werror` turns a new warning into an error; your `-Wno-error` comes earlier on the command line and loses | Read the full command. Turn off the project's warning flags (cJSON: `-DENABLE_CUSTOM_COMPILER_FLAGS=OFF`) instead of fighting the order |
 | A test binary fails when run by hand but passes in `ctest` | Wrong working directory (relative input paths) | `ctest -V -R parse_examples` shows the command and directory ctest uses |
@@ -520,7 +559,8 @@ Add each gap with `python3 scripts/srs.py add ...`, and log time-to-first-hint (
 | ASan report printed under gdb, then `No stack.` | ASan exits after reporting | `ASAN_OPTIONS=abort_on_error=1`, or `break __asan_report_store1` (list candidates with `nm prog \| grep __asan_report`) |
 | `warning: Error disabling address space randomization: Function not implemented` | The default seccomp profile blocks `personality` | Harmless. If you need fixed addresses: `ASLR_OFF=1 "$M/lab/run.sh"` |
 | Breakpoint shows `<MULTIPLE>`, or stops somewhere unexpected | The name exists in several objects (test copy, shared library, sanitizer runtime) | `info breakpoints`, `info symbol $pc`; use `break FILE:FUNCTION` |
-| `Function "X" not defined` at `-O2` | The function was inlined into its callers or removed | Rebuild at `-O0` for debugging. `info functions X` shows what exists |
+| `Function "parse_number" not defined in "cJSON.c".` at `-O2`; `break cJSON.c:306` gives `No compiled code for line 306` (measured) | The function was inlined into its callers, so there is no out-of-line copy to break on, and its first line has no code of its own | Break on a later line inside it (in the lab `break cJSON.c:308` works and shows `parse_number` as an inline frame), or rebuild at `-O0` for debugging |
+| `nm` says `no symbols` | The binary is stripped | `nm -D` still lists the sanitizer imports (`__asan_report_*`, `__ubsan_handle_*` are dynamic symbols); `ldd` still shows the runtimes |
 | `No symbol "item" in current context` | You are in the wrong frame | `bt`, then `frame N` |
 | gdb prints a colour context pane and the transcript looks nothing like the text | GEF is loaded from `/etc/gdb/gdbinit` | `gdb -nx` |
 | `git` says "dubious ownership" in `/work/fnd03` | Copy owned by a different UID than the one git runs as | `git config --global --add safe.directory '*'` inside the container |

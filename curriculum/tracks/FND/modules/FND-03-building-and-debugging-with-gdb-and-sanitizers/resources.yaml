@@ -1,14 +1,9 @@
 # Resources for FND-03-building-and-debugging-with-gdb-and-sanitizers. Cards copied verbatim from research/ (schema: templates/resource-card.yaml).
 # D7: every card needs verified within 180 days and status ok. Max 3 with role: core.
-# Sources: research/domain-maps/foundations.md (section D and 'FND-01 lab sources'), research/targets/FND.md (cJSON issue 800 card).
-# Only `role` was set by the module-builder; other fields are as filed. 'FND-03 use' comments are the module-builder's.
-# TODO(research): no CMake or GNU make documentation is filed (CMAKE_C_FLAGS, CheckCCompilerFlag, CMAKE_EXPORT_COMPILE_COMMANDS,
-#   CMakeConfigureLog.yaml, ctest working directory; make command-line variable override). The README states these from lab observation.
-# TODO(research): the ASan paper PDF or the sanitizers project's algorithm page (shadow mapping, redzones, quarantine) is not filed;
-#   the README derives the shadow check from disassembly instead.
-# TODO(research): no source filed for the ASAN_OPTIONS flags used (abort_on_error, detect_leaks, malloc_fill_byte, help);
-#   the README cites the runtime's own ASAN_OPTIONS=help=1 output in the lab.
-# TODO(research): the cjson-issue-800 card below lacks author, kind, cost, published, targets, assumes and status in research/targets/FND.md.
+# Sources: research/domain-maps/foundations.md (section D, 'FND-01 lab sources', 'FND-03 sources', 'FND-03 addendum'),
+#   research/targets/FND.md (cJSON issue 800 card, completed version).
+# The module-builder set `role` only (adding it where the research card has none); 'FND-03 use' comments are the module-builder's.
+# Open: the ASan paper PDF body is unverified (card covers the landing page only); the gdb 16.x release manual is not filed.
 
 resources:
   - title: "Debugging with GDB (current manual)"
@@ -26,24 +21,7 @@ resources:
     verified: 2026-11-10
     status: ok
     # Pinned to a development snapshot; for stable use the release docs matching the learner's gdb version.
-  # FND-03 use: the reference for every gdb command in this module (breakpoints and locations, ignore counts, frames, print/x, finish, watchpoints). Look things up here; do not read it cover to cover.
-
-  - title: "AddressSanitizer (Clang documentation)"
-    url: "https://clang.llvm.org/docs/AddressSanitizer.html"
-    author: "LLVM project"
-    kind: docs
-    tier: T1
-    cost: free
-    published: unknown
-    targets: "Clang/LLVM current docs (copyright 2007-2026); Linux, macOS, Android, FreeBSD, NetBSD, Windows 8.1+"
-    covers: "Detects heap/stack/global OOB, UAF, UAR, use-after-scope, double/invalid free, leaks; about 2x slowdown; recommends -O1+, -g, -fno-omit-frame-pointer; no static linking; not for production"
-    assumes: "C/C++ build basics"
-    scores: {directness: 5, currency: 5, depth: 3, activity: 2, cost: 5, accessibility: 4}
-    role: core
-    verified: 2026-11-10
-    status: ok
-    # Page does not discuss shadow memory, redzones, intra-object overflow or uninitialised reads.
-  # FND-03 use: what ASan detects and the recommended flags. gcc's ASan in the lab uses the same runtime family and report format (the reports in this module are gcc's).
+  # FND-03 use: the reference for every gdb command in this module. Version gap: this card targets the current development snapshot (19.0.50), while the lab runs gdb 16.3. Commands used here behaved as described in 16.3 in the lab; if a manual feature is missing in 16.3, trust the lab. TODO(research): file the gdb 16.x release manual.
 
   - title: "Instrumentation Options (GCC manual): -fsanitize=address, undefined, -fsanitize-recover"
     url: "https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html"
@@ -59,7 +37,216 @@ resources:
     role: core
     verified: 2026-11-10
     status: ok
-  # FND-03 use: the compiler you actually use. UBSan sub-checks and the recovery default (-fno-sanitize-recover).
+  # FND-03 use: the compiler you actually use. UBSan sub-checks and the recovery defaults (-fno-sanitize-recover).
+
+  - title: "AddressSanitizerAlgorithm (google/sanitizers wiki)"
+    url: "https://github.com/google/sanitizers/wiki/AddressSanitizerAlgorithm"
+    author: "Google sanitizers project"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "AddressSanitizer, x86-64 and 32-bit mappings as stated on the page"
+    covers: "8 app bytes map to 1 shadow byte. Page states: 64-bit 'Shadow = (Mem >> 3) + 0x7fff8000;', 32-bit offset 0x20000000. Heap redzones poisoned around malloc regions; stack redzones around local arrays, poisoned on entry; on free the region's shadow is poisoned and the chunk is held in a quarantine queue so malloc does not reuse it for a while. Page is old; offset may differ on current builds (needs-lab-verification against a running binary)."
+    assumes: "pointer arithmetic"
+    scores: {directness: 4, currency: 3, depth: 4, activity: 1, cost: 5, accessibility: 3}
+    role: core
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: primary statement of the shadow mapping (Mem >> 3) + 0x7fff8000, redzones and quarantine. The README cross-checks the offset against the lab's disassembly and gdb.
+
+  - title: "AddressSanitizer (Clang documentation)"
+    url: "https://clang.llvm.org/docs/AddressSanitizer.html"
+    author: "LLVM project"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "Clang/LLVM current docs (copyright 2007-2026); Linux, macOS, Android, FreeBSD, NetBSD, Windows 8.1+"
+    covers: "Detects heap/stack/global OOB, UAF, UAR, use-after-scope, double/invalid free, leaks; about 2x slowdown; recommends -O1+, -g, -fno-omit-frame-pointer; no static linking; not for production"
+    assumes: "C/C++ build basics"
+    scores: {directness: 5, currency: 5, depth: 3, activity: 2, cost: 5, accessibility: 4}
+    role: reference
+    verified: 2026-11-10
+    status: ok
+    # Page does not discuss shadow memory, redzones, intra-object overflow or uninitialised reads.
+  # FND-03 use: what ASan detects and the recommended flags (-O1, -fno-omit-frame-pointer); no static linking. gcc's ASan in the lab uses the same runtime family and report format.
+
+  - title: "CheckCCompilerFlag (CMake)"
+    url: "https://cmake.org/cmake/help/latest/module/CheckCCompilerFlag.html"
+    author: "Kitware / CMake project"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "CMake latest docs; CMAKE_REQUIRED_LINK_OPTIONS added in 3.14"
+    covers: "check_c_compiler_flag(<flag> <variable>). CMAKE_REQUIRED_FLAGS: 'A space-separated string of additional flags to pass to the compiler. A semicolon-separated list will not work.' CMAKE_<LANG>_FLAGS contents are 'automatically prepended' to the compiler command before it. CMAKE_REQUIRED_LINK_OPTIONS: 'A semicolon-separated list of options to add to the link command.' The page does NOT say that the tested flag itself is passed at link time; it says the check target defaults to an executable (so it is linked), STATIC_LIBRARY compiles without linking."
+    assumes: "CMake basics"
+    scores: {directness: 5, currency: 5, depth: 3, activity: 2, cost: 5, accessibility: 3}
+    role: reference
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: what cJSON's flag check is documented to do. The doc is silent on whether the tested flag reaches the link step; the compile-with, link-without behaviour is a lab observation from CMakeConfigureLog.yaml.
+
+  - title: "CheckCSourceCompiles (CMake)"
+    url: "https://cmake.org/cmake/help/latest/module/CheckCSourceCompiles.html"
+    author: "Kitware / CMake project"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "CMake latest docs"
+    covers: "Same CMAKE_REQUIRED_FLAGS / CMAKE_REQUIRED_LINK_OPTIONS wording. Says the check 'compiles and links the test source code as an executable program' by default; with CMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY it is 'compiled but not linked'. Does not say whether CMAKE_REQUIRED_FLAGS reaches the link step (fetch relayed no statement)."
+    assumes: "CMake basics"
+    scores: {directness: 4, currency: 5, depth: 3, activity: 2, cost: 5, accessibility: 3}
+    role: reference
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: the check links an executable by default, which is why a compile-only flag pass fails for -fsanitize=address.
+
+  - title: "CMAKE_<LANG>_FLAGS (CMake)"
+    url: "https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html"
+    author: "Kitware / CMake project"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "CMake latest docs"
+    covers: "'Language-wide flags for language <LANG> used when building for all configurations'; CMAKE_C_FLAGS is 'Initialized by the CFLAGS environment variable'; relayed as applying to every compiler invocation (compile and link)."
+    assumes: "CMake basics"
+    scores: {directness: 5, currency: 5, depth: 2, activity: 2, cost: 5, accessibility: 4}
+    role: reference
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: where your sanitizer flags go; initialised from the CFLAGS environment variable.
+
+  - title: "CMAKE_EXPORT_COMPILE_COMMANDS (CMake)"
+    url: "https://cmake.org/cmake/help/latest/variable/CMAKE_EXPORT_COMPILE_COMMANDS.html"
+    author: "Kitware / CMake project"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "CMake >= 3.5; Makefile and Ninja generators only; output compile_commands.json"
+    covers: "Writes exact compiler invocation per translation unit; ignored for other generators; poor fit with unity builds."
+    assumes: "CMake basics"
+    scores: {directness: 5, currency: 5, depth: 2, activity: 3, cost: 5, accessibility: 4}
+    role: reference
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: compile_commands.json, the per-object evidence of which flags were used.
+
+  - title: "cmake-configure-log(7)"
+    url: "https://cmake.org/cmake/help/latest/manual/cmake-configure-log.7.html"
+    author: "Kitware / CMake project"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "CMake >= 3.26"
+    covers: "${CMAKE_BINARY_DIR}/CMakeFiles/CMakeConfigureLog.yaml (location may change; query via cmake-file-api(7)). Records try_compile events with backtrace, variables, combined build output and exit code. Not a full configure log."
+    assumes: "CMake basics"
+    scores: {directness: 5, currency: 5, depth: 3, activity: 3, cost: 5, accessibility: 3}
+    role: reference
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: where failed feature checks are logged (Drill 4, project step 2).
+
+  - title: "add_test (CMake)"
+    url: "https://cmake.org/cmake/help/latest/command/add_test.html"
+    author: "Kitware / CMake project"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "CMake latest docs"
+    covers: "add_test(NAME ... WORKING_DIRECTORY <dir>): 'If not specified, the test will be run in CMAKE_CURRENT_BINARY_DIR.'"
+    assumes: "ctest basics"
+    scores: {directness: 5, currency: 5, depth: 1, activity: 2, cost: 5, accessibility: 4}
+    role: reference
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: why tests run in the build's tests directory, and why running them by hand elsewhere fails.
+
+  - title: "WORKING_DIRECTORY (CMake test property)"
+    url: "https://cmake.org/cmake/help/latest/prop_test/WORKING_DIRECTORY.html"
+    author: "Kitware / CMake project"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "CMake latest docs"
+    covers: "Default: the test runs in the binary directory associated with where the test was created."
+    assumes: "ctest basics"
+    scores: {directness: 5, currency: 5, depth: 1, activity: 2, cost: 5, accessibility: 4}
+    role: reference
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: same working-directory default, as a test property.
+
+  - title: "9.5 Overriding Variables (GNU make manual)"
+    url: "https://www.gnu.org/software/make/manual/html_node/Overriding.html"
+    author: "Free Software Foundation, GNU make manual"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "GNU make (current manual)"
+    covers: "A command-line 'v=x' means 'all ordinary assignments of the same variable in the makefile are ignored'; example make CFLAGS='-g -O'; the makefile can still change an overridden variable with the 'override' directive ('override variable = value'). The override-directive page itself (Override-Directive.html) was not fetched."
+    assumes: "make basics"
+    scores: {directness: 5, currency: 5, depth: 3, activity: 3, cost: 5, accessibility: 4}
+    role: reference
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: why make CFLAGS=... on the command line drops the Makefile's own CFLAGS += -fstack-protector.
+
+  - title: "10.3 Variables Used by Implicit Rules (GNU make manual)"
+    url: "https://www.gnu.org/software/make/manual/html_node/Implicit-Variables.html"
+    author: "Free Software Foundation, GNU make manual"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "GNU make current manual"
+    covers: "CFLAGS: 'Extra flags to give to the C compiler.' CPPFLAGS: flags for the C preprocessor and programs that use it. LDFLAGS: 'Extra flags to give to compilers when they are supposed to invoke the linker', such as -L. LDLIBS: library flags or names given to the linker; -lfoo belongs in LDLIBS, not LDFLAGS. The page does not show the exact link command, so it does not state where these sit on the link line."
+    assumes: "make basics"
+    scores: {directness: 5, currency: 5, depth: 3, activity: 3, cost: 5, accessibility: 4}
+    role: reference
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: CFLAGS vs LDFLAGS vs LDLIBS when injecting sanitizer flags into a Makefile build.
+
+  - title: "AddressSanitizerFlags (google/sanitizers wiki)"
+    url: "https://github.com/google/sanitizers/wiki/AddressSanitizerFlags"
+    author: "Google sanitizers project"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "AddressSanitizer flags"
+    covers: "malloc_fill_byte default 0xbe ('Value used to fill the newly allocated memory'), max_malloc_fill_size default 4096. abort_on_error, detect_leaks and help are not in its table. Page says the list may be incomplete and suggests ASAN_OPTIONS=help=1 ./a.out."
+    assumes: "ASan basics"
+    scores: {directness: 4, currency: 3, depth: 3, activity: 3, cost: 5, accessibility: 4}
+    role: reference
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: malloc_fill_byte (0xbe), the bytes you see in fresh heap buffers in gdb.
+
+  - title: "SanitizerCommonFlags (google/sanitizers wiki)"
+    url: "https://github.com/google/sanitizers/wiki/SanitizerCommonFlags"
+    author: "Google sanitizers project"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "Flags common to sanitizers"
+    covers: "abort_on_error default false (true on Darwin): abort() instead of _exit() after the report. detect_leaks default true. help default false: prints the flag options. malloc_fill_byte is not here (it is on AddressSanitizerFlags)."
+    assumes: "ASan basics"
+    scores: {directness: 4, currency: 3, depth: 3, activity: 3, cost: 5, accessibility: 4}
+    role: reference
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: abort_on_error, detect_leaks and help, used under gdb.
 
   - title: "Compiler Options Hardening Guide for C and C++"
     url: "https://best.openssf.org/Compiler-Hardening-Guides/Compiler-Options-Hardening-Guide-for-C-and-C++.html"
@@ -143,22 +330,54 @@ resources:
     # Easier in odd environments (single file, minimal deps). Latest release not shown on page.
   # FND-03 use: the extension the base image loads by default. This module uses gdb -nx; GEF's context view matters from FND-06.
 
-  - title: "AddressSanitizer: A Fast Address Sanity Checker (USENIX ATC '12)"
+  - title: "Typo in compiler flags about Sanitizer in CMakeLists.txt? (cJSON issue 728)"
+    url: "https://github.com/DaveGamble/cJSON/issues/728"
+    author: "sdygt (reporter), DaveGamble/cJSON"
+    kind: writeup
+    tier: T2
+    cost: free
+    published: 2023-01-03
+    targets: "cJSON CMakeLists.txt ENABLE_SANITIZERS block"
+    covers: "Reporter asks if '-01' should be '-O1' in the ENABLE_SANITIZERS block; open, no maintainer reply shown. Not about -fsanitize=address being dropped."
+    assumes: "none"
+    scores: {directness: 2, currency: 3, depth: 1, activity: 1, cost: 5, accessibility: 4}
+    role: reference
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: the existing upstream report of the -01 typo. Cite it in bug-report.md's duplicate search; it does not cover the dropped -fsanitize=address.
+
+  - id: cjson-issue-800
+    title: "OOB access in `parse_string` (cJSON issue 800)"
+    url: https://github.com/DaveGamble/cJSON/issues/800
+    author: "oliverchang (reporter)"
+    kind: writeup
+    tier: T1
+    cost: free
+    published: 2023-11-29      # closed 2024-05-06 via PR #852
+    targets: "cJSON parse_string reached through parse_object; the fuzz target calls cJSON_ParseWithLength with input lacking a trailing NUL, e.g. {\"1\":1,"
+    covers: "ASan heap-buffer-overflow read in parse_string; explains that the existing fuzz target skipped non-NUL-terminated inputs (blind spot). A commenter (carnil, 2025-05-23) tentatively links CVE-2023-53154; the MITRE record of that CVE cites this issue, which confirms the link."
+    assumes: "ASan report reading"
+    scores: {directness: 5, currency: 5, depth: 3, activity: 3, cost: 5, accessibility: 4}
+    role: reference
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: the 'fuzz harness hid the bug' entry in Where this shows up in the wild. Do not read the fix discussion during FND-03.
+
+  - title: "AddressSanitizer: A Fast Address Sanity Checker (USENIX ATC '12 page)"
     url: "https://www.usenix.org/conference/atc12/technical-sessions/presentation/serebryany"
     author: "Konstantin Serebryany, Derek Bruening, Alexander Potapenko, Dmitriy Vyukov"
     kind: paper
     tier: T1
     cost: free
-    published: 2012
-    targets: "C/C++; paper reports 73% average slowdown and 300+ Chromium bugs"
-    covers: "Design (specialised allocator plus instrumentation); only the abstract page was read, not the PDF"
-    assumes: "systems background"
-    scores: {directness: 3, currency: 3, depth: 5, activity: 1, cost: 5, accessibility: 2}
+    published: 2012-06
+    targets: "ASan as of 2012; pages 309-318; abstract reports 73% average slowdown and over 300 Chromium bugs"
+    covers: "Official landing page and abstract only. The page text does NOT discuss shadow memory or quarantine; PDF link is https://www.usenix.org/system/files/conference/atc12/atc12-final39.pdf (not read: no pdftotext on this machine). Use the AddressSanitizerAlgorithm wiki card for shadow mapping and quarantine."
+    assumes: "none"
+    scores: {directness: 4, currency: 2, depth: 4, activity: 1, cost: 5, accessibility: 3}
     role: deep-dive
-    verified: 2026-11-10
-    status: ok
-    # Shadow-memory mechanism not on the fetched page; fetch the PDF before citing mechanism.
-  # FND-03 use: the design paper behind the shadow-memory mechanism you derive from disassembly. Only the abstract page is filed; fetch the PDF before quoting mechanism from it.
+    verified: 2026-11-11
+    status: ok     # landing page verified; the PDF body is unverified (verified: null)
+  # FND-03 use: the design paper. Only the landing page and abstract are verified; for mechanism use the AddressSanitizerAlgorithm card.
 
   - title: "pwndbg (GitHub)"
     url: "https://github.com/pwndbg/pwndbg"
@@ -192,13 +411,3 @@ resources:
     status: ok
     # Duration not stated. Course page requires OST2 account for content (not tested). Prerequisite includes assembly, so for OSVR's order (asm after) it may be better used inside FND-06.
   # FND-03 use: an outside gdb course if you want a second explanation. It assumes one assembly language, so it may fit better alongside FND-06.
-
-  - id: cjson-issue-800
-    title: "cJSON issue 800: Out-of-bounds read in parse_string (CVE-2023-53154)"
-    url: https://github.com/DaveGamble/cJSON/issues/800
-    tier: T1
-    verified: 2026-11-10
-    covers: PoC `{"1":1,`, why exact-size buffers expose the bug, fuzz harness blind spot
-    role: reference
-    status: ok   # added by module-builder (as in FND-02): verified date present, no problem reported; research card omits status
-    # FND-03 use: the "fuzz harness hid the bug" entry in Where this shows up in the wild. Do not read the fix discussion during FND-03.

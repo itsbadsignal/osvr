@@ -1205,3 +1205,52 @@ Claim support:
 - Return values: supported. "return 1 for success and 0 or a negative value for failure. In particular a return value of -2 indicates the operation is not supported by the public key algorithm."
 - `out`/`outlen` defined after failure: NOT stated. The page says only "otherwise an error is returned"; treat contents of both as unspecified, so callers must not use `outlen` after a failed call.
 - The page does not state that the returned size when `out == NULL` is exact; it says "minimum required", so the real plaintext can be shorter than the buffer and no NUL terminator is added (the property relevant to the iperf off-by-one; the page says nothing about NUL, it follows from the output being raw bytes).
+
+### FND-03 addendum (added 2026-11-11, second pass)
+Not repeated here (already above in "FND-03 sources"): CheckCCompilerFlag, CheckCSourceCompiles, AddressSanitizerAlgorithm, AddressSanitizerFlags, SanitizerCommonFlags, GNU make Overriding, cJSON issue #728. The cJSON issue 800 card lives in research/targets/FND.md (completed there).
+
+```yaml
+- title: "10.3 Variables Used by Implicit Rules (GNU make manual)"
+  url: "https://www.gnu.org/software/make/manual/html_node/Implicit-Variables.html"
+  author: "Free Software Foundation, GNU make manual"
+  kind: docs
+  tier: T1
+  cost: free
+  published: unknown
+  targets: "GNU make current manual"
+  covers: "CFLAGS: 'Extra flags to give to the C compiler.' CPPFLAGS: flags for the C preprocessor and programs that use it. LDFLAGS: 'Extra flags to give to compilers when they are supposed to invoke the linker', such as -L. LDLIBS: library flags or names given to the linker; -lfoo belongs in LDLIBS, not LDFLAGS. The page does not show the exact link command, so it does not state where these sit on the link line."
+  assumes: "make basics"
+  scores: {directness: 5, currency: 5, depth: 3, activity: 3, cost: 5, accessibility: 4}
+  role: core
+  verified: 2026-11-11
+  status: ok
+
+- title: "AddressSanitizer: A Fast Address Sanity Checker (USENIX ATC '12 page)"
+  url: "https://www.usenix.org/conference/atc12/technical-sessions/presentation/serebryany"
+  author: "Konstantin Serebryany, Derek Bruening, Alexander Potapenko, Dmitriy Vyukov"
+  kind: paper
+  tier: T1
+  cost: free
+  published: 2012-06
+  targets: "ASan as of 2012; pages 309-318; abstract reports 73% average slowdown and over 300 Chromium bugs"
+  covers: "Official landing page and abstract only. The page text does NOT discuss shadow memory or quarantine; PDF link is https://www.usenix.org/system/files/conference/atc12/atc12-final39.pdf (not read: no pdftotext on this machine). Use the AddressSanitizerAlgorithm wiki card for shadow mapping and quarantine."
+  assumes: "none"
+  scores: {directness: 4, currency: 2, depth: 4, activity: 1, cost: 5, accessibility: 3}
+  role: deep-dive
+  verified: 2026-11-11
+  status: ok     # landing page verified; the PDF body is unverified (verified: null)
+```
+
+ASAN_OPTIONS flag coverage (sources already carded above; this is the combined answer, all 2026-11-11):
+- SanitizerCommonFlags wiki: `detect_leaks` (default true), `abort_on_error` (default false, true on Darwin; calls abort() instead of _exit() after the report), `fast_unwind_on_malloc` (default true; frame-pointer unwinder on malloc/free), `exitcode` (default 1; "Override the program exit status if the tool found an error"), `help` (default false). `halt_on_error` is NOT a listed flag there; it is mentioned only under `suppress_equal_pcs`.
+- AddressSanitizerFlags wiki: `halt_on_error` default true, only effective if compiled with -fsanitize-recover=address, "use at your own risk"; `detect_stack_use_after_return` default false; `malloc_fill_byte` 0xbe. `exitcode` and `fast_unwind_on_malloc` are not listed there; the page says its list is incomplete.
+- GCC Instrumentation Options: mentions ASAN_OPTIONS, `halt_on_error=1` as the ASan default, and calls -fsanitize-recover=address experimental. No `exitcode` or `abort_on_error`.
+- clang AddressSanitizer docs: ASAN_OPTIONS takes precedence over compile-time defaults, `help=1` lists flags; does not mention exitcode, halt_on_error or abort_on_error.
+- Conflict: GCC says `halt_on_error=1` is the default, the ASan wiki says true; consistent. The wiki's "only effective with -fsanitize-recover=address" is a condition the GCC text does not repeat in the relay.
+
+### cJSON tracker novelty search (GitHub search API, DaveGamble/cJSON, issues and PRs separately, 2026-11-11)
+Queries: `check_c_compiler_flag`, `check_c_source_compiles`, `CMAKE_REQUIRED_FLAGS`, `CMAKE_REQUIRED_LINK_OPTIONS`, `fsanitize`, `link sanitizer`, `ENABLE_SANITIZERS`, `AddressSanitizer`, `ASan`, plus earlier `sanitize` and `sanitizer`.
+- Zero hits for check_c_compiler_flag (issues), check_c_source_compiles, CMAKE_REQUIRED_FLAGS, CMAKE_REQUIRED_LINK_OPTIONS, "link sanitizer" in issues or PRs. `check_c_compiler_flag` PR hit: only #852 "Fix heap buffer overflow" (closed), a matching word in an unrelated PR, not read.
+- ENABLE_SANITIZERS: issue #140 (AppVeyor CI), PRs #794, #1033, #92: none about flags being dropped.
+- Closest: issue #728 (open, "-01" typo in the ENABLE_SANITIZERS block, no maintainer reply seen). The 16 `fsanitize` and 27 `AddressSanitizer` issue hits are cJSON bug reports found with ASan.
+- Result: none found for "ENABLE_SANITIZERS silently drops -fsanitize=address" or for a check_c_compiler_flag link-time failure. Local note: cJSON CMakeLists.txt line 102 uses `CHECK_C_COMPILER_FLAG(${compiler_flag} "FLAG_SUPPORTED_${current_variable}")`, which fits the lab observation (the check does not link the sanitizer runtime unless link options carry it) but that mechanism is the lab's finding, not confirmed by the docs (see CheckCCompilerFlag card: doc is silent). Search matches words only, so a differently worded report could exist; the tracker had hundreds of ASan-related hits, only the first 30 per query were listed.

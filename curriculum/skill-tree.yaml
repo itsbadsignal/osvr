@@ -65,7 +65,7 @@ nodes:
   - id: FND-02-c-pointers-and-memory
     title: "C I: pointers, arrays, strings and where objects live"
     track: FND
-    status: drafting
+    status: ready
     prereqs: [FND-01-linux-lab-and-learning-protocol]
     outcomes: [rootcause]
     hours: 18
@@ -87,13 +87,13 @@ nodes:
   - id: FND-04-first-cve-crash-reproduction
     title: Reproduce a real CVE crash and root-cause it to the line
     track: FND
-    status: planned
+    status: drafting
     prereqs: [FND-03-building-and-debugging-with-gdb-and-sanitizers]
     outcomes: [rootcause, find]
     hours: 6
     rds: "walking an ASan report back from the crash frame to the line that broke the invariant"
     mitigations: []
-    direct_target: ""
+    direct_target: "TinyDir CVE-2023-49287 (GHSA-jf5r-wgf4-qhxf, CWE-121): stack overflow at tinydir.h:711, root cause tinydir.h:646, reproduced at tag 1.2.5 (4acafe7916720645bf65e19be8603acfe7acdba1) under ASan with 20-run counts, negative control at fix 8124807260735a837226fa151493536591f6715d; worked example walks back cJSON CVE-2023-53154 (crash parse_string, root cause parse_object); variation libmodbus CVE-2022-0367 at bd1c85f2d39cba13c031f019b005f564cf799f3e"
     # FIRST REAL CVE CONTACT: ends at cumulative hour 40. Sanitizers are detection, not mitigation.
 
   # ---------------------------------------------------------------- PRO woven in early

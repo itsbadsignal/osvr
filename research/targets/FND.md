@@ -20,7 +20,7 @@ Method: CVE records fetched from the CVE Services API (`https://cveawg.mitre.org
 | 3 | cJSON 1.7.17 | CVE-2023-53154 | heap OOB read (CWE-125) | 5 lines | 7-byte buffer to `cJSON_ParseWithLength` via a 6-line harness | yes, ASan heap-buffer-overflow |
 | 4 | stb_image.h (pre 86b7570) | CVE-2021-28021 | global OOB read (JPEG) | 2 lines | crafted JPEG, PoC is a zip attachment | no (not built; PoC not fetched) |
 
-Why TinyDir first: the learner runs `./sample $(long string)` and gets a textbook ASan stack report, the bug is a single `strcpy` into a buffer declared one `#define` too small, the diff is one token, and the whole library is one 848-line header. Why not cJSON or libmodbus first: cJSON needs a harness the learner must write; libmodbus needs a server plus a client and the report is a SEGV rather than the labelled "buffer-overflow" report, which is a worse first read of an ASan report.
+Why TinyDir first: the learner runs `./sample $(long string)` and gets a textbook ASan stack report, the bug is a single `strcpy` into a buffer declared one `#define` too small, the diff is one token, and the whole library is one 838-line header at 1.2.5 (848 on master). Why not cJSON or libmodbus first: cJSON needs a harness the learner must write; libmodbus needs a server plus a client and the report is a SEGV rather than the labelled "buffer-overflow" report, which is a worse first read of an ASan report.
 
 Cross-module allocation I recommend (the architect may reject): FND-01 = cJSON CVE-2023-53154 smoke test; FND-02 = reading diffs (iperf, libmodbus diff, cJSON diff); FND-03 = cJSON v1.7.17 build and debug; FND-04 = TinyDir (primary), libmodbus (variation or second CVE). This keeps the FND-04 bug unspoiled by earlier modules; the cost is that cJSON appears in three modules (familiarity benefit, spoiler risk for the CVE-2023-53154 diff, which FND-02 should therefore not use if cJSON is also the FND-01 smoke test; see FND-02).
 
@@ -34,7 +34,7 @@ Cross-module allocation I recommend (the architect may reject): FND-01 = cJSON C
 - Pinned vulnerable: git tag `1.2.5` = `4acafe7916720645bf65e19be8603acfe7acdba1` (repo `https://github.com/cxong/tinydir`).
 - Fix commit: `8124807260735a837226fa151493536591f6715d` "Fix buffer overflow in tinydir_file_open with long path names", 2023-12-02, contained in tag 1.2.6 (`6ba79293a5e4ea015343e20453b4f4595c644515`). The advisory page itself does not name the commit; I identified it from the git history (`git log 1.2.5..1.2.6`) and its message and diff match the advisory. The whole functional change in `tinydir.h` is:
   `_tinydir_char_t file_name_buf[_TINYDIR_FILENAME_MAX];` becomes `... file_name_buf[_TINYDIR_PATH_MAX];` (256 to 4096 bytes). It also adds a regression test (`tests/file_open_test.c`).
-- Size: `tinydir.h` 848 lines, header only, no dependencies beyond libc.
+- Size: `tinydir.h` 838 lines at tag 1.2.5 (wc -l, identical at the fix commit and 1.2.6; the earlier 848 was the line count of master, 1.2.6-2-ga4a2db5, corrected 2026-11-11), header only, no dependencies beyond libc.
 - build: VERIFIED 2026-11-10 in `debian:trixie` (gcc 14.2.0, `apt install gcc git`):
   ```
   git clone https://github.com/cxong/tinydir && cd tinydir && git checkout 1.2.5
@@ -134,32 +134,137 @@ D1 is a poor fit in the intrinsic sense: FND-01 teaches workstation setup and a 
 
 ```yaml
 - id: tinydir-ghsa-jf5r-wgf4-qhxf
-  title: "GHSA-jf5r-wgf4-qhxf: Buffer overflow vulnerabilities in tinydir (CVE-2023-49287)"
+  title: "Buffer overflow vulnerabilities in tinydir (GHSA-jf5r-wgf4-qhxf, CVE-2023-49287)"
   url: https://github.com/cxong/tinydir/security/advisories/GHSA-jf5r-wgf4-qhxf
+  author: "cxong (repository maintainer, publisher); reporter credit 0xdea"
+  kind: advisory
   tier: T1
-  verified: 2026-11-10
+  cost: free
+  published: 2023-12-03
+  targets: "tinydir <= 1.2.5, patched 1.2.6; CVSS 3.1 7.7 High (AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H); CWE-120, CWE-121; cites tinydir.h lines 675-680, 706, 711 and a PoC using samples/file_open_sample.c"
   covers: vendor advisory with ASan reproduction steps; affected <=1.2.5, fixed 1.2.6
-  scores: {directness: 5, currency: 5, depth: 3, activity: 4, cost: 5, accessibility: 5}
   assumes: running gcc, reading a stack report
+  scores: {directness: 5, currency: 5, depth: 3, activity: 4, cost: 5, accessibility: 5}
+  verified: 2026-11-11
+  status: ok
+- id: tinydir-cve-2023-49287-mitre
+  title: "CVE-2023-49287 (MITRE CVE Services record)"
+  url: https://cveawg.mitre.org/api/cve/CVE-2023-49287
+  author: "GitHub_M (CNA / assigner)"
+  kind: advisory
+  tier: T1
+  cost: free
+  published: 2023-12-04
+  targets: "cxong tinydir, all versions < 1.2.6"
+  covers: "Description: 'TinyDir is a lightweight C directory and file reader. Buffer overflows in the tinydir_file_open() function', patched in 1.2.6; CWE-120 and CWE-121; references: the GHSA, release 1.2.6, oss-security 2023/12/04/1, Packet Storm 176060, seclists fulldisclosure 2023/Dec/14 (the last three not fetched)"
+  assumes: none
+  scores: {directness: 3, currency: 5, depth: 1, activity: 1, cost: 5, accessibility: 4}
+  verified: 2026-11-11
+  status: ok
+- id: tinydir-fix-commit-8124807
+  title: "Fix buffer overflow in tinydir_file_open with long path names (cxong/tinydir commit 8124807)"
+  url: https://github.com/cxong/tinydir/commit/8124807260735a837226fa151493536591f6715d
+  author: "cxong (per commit page); git metadata in local clone: Cong <congusbongus@gmail.com>"
+  kind: source
+  tier: T1
+  cost: free
+  published: 2023-12-02    # NOT shown on the fetched page; from local clone git log (Sat Dec 2 23:13:38 2023 +1100)
+  targets: "tinydir.h, 7 files +39/-2, parent 74acffdf66b5a1bc09278f0b8b0fcc892ab12183; contained in tag 1.2.6"
+  covers: "Page diff hunk at line 643; changed line 646: file_name_buf[_TINYDIR_FILENAME_MAX] becomes file_name_buf[_TINYDIR_PATH_MAX]. Adds tests/file_open_test.c regression test. Local git confirms line 646 of tinydir.h at the fix is the new declaration."
+  assumes: C arrays and macros
+  scores: {directness: 5, currency: 5, depth: 3, activity: 3, cost: 5, accessibility: 4}
+  verified: 2026-11-11
+  status: ok
 - id: libmodbus-issue-614
-  title: "libmodbus issue 614: Heap-based Buffer Overflow in modbus_reply"
+  title: "Heap-based Buffer Overflow in modbus_reply (libmodbus issue 614)"
   url: https://github.com/stephane/libmodbus/issues/614
+  author: "AiDaiP (reporter); stephane (maintainer), mhei (fix), JonasToth (ASan reproduction)"
+  kind: writeup
   tier: T1
-  verified: 2026-11-10
-  covers: original report, PoC bytes (base64), gdb watchpoint walk-through, ASan confirmation
+  cost: free
+  published: 2021-12-22      # title changed from "_modbus_receive_msg" to "modbus_reply" on 2022-01-04; closed 2022-01-08 via b4ef4c1
+  targets: "libmodbus modbus_reply(), found by fuzzing unit-test-server; JonasToth's ASan run showed a SEGV write at modbus.c:980; a commenter notes an earlier report in issue #499"
+  covers: "original report with PoC, second PoC (2022-01-04), ASan confirmation, fix verification, discussion of adding fuzzing to CI"
+  assumes: "TCP framing, running a server and a client"
   scores: {directness: 5, currency: 5, depth: 4, activity: 3, cost: 5, accessibility: 3}
-  assumes: TCP framing, running a server and a client
+  verified: 2026-11-11
+  status: ok
 - id: libmodbus-fix-b4ef4c1
-  title: "libmodbus commit b4ef4c1: modbus_reply: fix copy & paste error in sanity check"
+  title: "modbus_reply: fix copy & paste error in sanity check (fixes #614)  [libmodbus commit b4ef4c1]"
   url: https://github.com/stephane/libmodbus/commit/b4ef4c17d618eba0adccc4c7d9e9a1ef809fc9b6
+  author: "Michael Heimpold <mhei@heimpold.de>"
+  kind: source
   tier: T1
-  verified: 2026-11-10   # confirmed via local clone and the CVE record's reference list
+  cost: free
+  published: 2022-01-08
+  targets: "src/modbus.c modbus_reply(), MODBUS_FC_WRITE_AND_READ_REGISTERS; first contained in v3.1.7 (`git describe --contains b4ef4c1` = `v3.1.7~1`; `git tag --contains` lists v3.1.7 through v3.2.0; patch-id f4be7792bf2f17d3b0ad04ae0a1fe265d4772611 occurs only in b4ef4c1, no cherry-picks). Agrees with the CVE record. [Corrected 2026-11-11 by main thread from the FND-04 lab-engineer's in-image git check; the earlier 'v3.1.10' came from a truncated tag listing.]"
+  covers: "One-line change: the duplicated `mapping_address < 0` in the bounds check becomes `mapping_address_write < 0`, so both the read and write address are range-checked."
+  assumes: "C, signed index bounds checks"
+  scores: {directness: 5, currency: 5, depth: 3, activity: 3, cost: 5, accessibility: 4}
+  verified: 2026-11-11     # verified from git (local clone: git show b4ef4c1), not from the GitHub page; the GitHub page was not fetched. Date and author are from git.
+  status: ok
+- id: libmodbus-cve-2022-0367-mitre
+  title: "CVE-2022-0367 (MITRE CVE Services record)"
+  url: https://cveawg.mitre.org/api/cve/CVE-2022-0367
+  author: "Red Hat (CNA / assigner)"
+  kind: advisory
+  tier: T1
+  cost: free
+  published: 2022-08-29
+  targets: "libmodbus; version entry 'Fixed in v3.1.7'"
+  covers: "'A heap-based buffer overflow flaw was found in libmodbus in function modbus_reply() in src/modbus.c.' CWE-119. References: issue 614, Red Hat Bugzilla 2045571, commit b4ef4c17, Debian LTS DLA 3098-1 and a 2025-03 Debian LTS announcement (references not fetched)."
+  assumes: none
+  scores: {directness: 3, currency: 4, depth: 1, activity: 1, cost: 5, accessibility: 4}
+  verified: 2026-11-11
+  status: ok
+- id: cjson-cve-2023-53154-mitre
+  title: "CVE-2023-53154 (MITRE CVE Services record)"
+  url: https://cveawg.mitre.org/api/cve/CVE-2023-53154
+  author: "MITRE (CNA / assigner)"
+  kind: advisory
+  tier: T1
+  cost: free
+  published: 2025-05-23
+  targets: "cJSON before 1.7.18"
+  covers: "'In cJSON before 1.7.18, the parse_string function has a heap-based buffer over-read', triggered by input like {\"1\":1, with no trailing newline via cJSON_ParseWithLength. CWE-125. References: compare v1.7.17...v1.7.18, issue 800, Debian LTS 2025/06/msg00014 (compare and LTS not fetched)."
+  assumes: none
+  scores: {directness: 3, currency: 4, depth: 1, activity: 1, cost: 5, accessibility: 4}
+  verified: 2026-11-11
+  status: ok
 - id: cjson-issue-800
-  title: "cJSON issue 800: Out-of-bounds read in parse_string (CVE-2023-53154)"
+  title: "OOB access in `parse_string` (cJSON issue 800)"
   url: https://github.com/DaveGamble/cJSON/issues/800
+  author: "oliverchang (reporter)"
+  kind: writeup
   tier: T1
-  verified: 2026-11-10
-  covers: PoC `{"1":1,`, why exact-size buffers expose the bug, fuzz harness blind spot
+  cost: free
+  published: 2023-11-29      # closed 2024-05-06 via PR #852
+  targets: "cJSON parse_string reached through parse_object; the fuzz target calls cJSON_ParseWithLength with input lacking a trailing NUL, e.g. {\"1\":1,"
+  covers: "ASan heap-buffer-overflow read in parse_string; explains that the existing fuzz target skipped non-NUL-terminated inputs (blind spot). A commenter (carnil, 2025-05-23) tentatively links CVE-2023-53154; the MITRE record of that CVE cites this issue, which confirms the link."
+  assumes: "ASan report reading"
+  scores: {directness: 5, currency: 5, depth: 3, activity: 3, cost: 5, accessibility: 4}
+  verified: 2026-11-11
+  status: ok
+- id: tinydir-hns-2023-04-seclists
+  title: "HNS-2023-04 - HN Security Advisory - Buffer overflow vulnerabilities with long path names in TinyDir"
+  url: http://seclists.org/fulldisclosure/2023/Dec/14
+  author: "Marco Ivaldi (HN Security), Full Disclosure post dated 2023-12-04"
+  kind: advisory
+  tier: T1
+  cost: free
+  published: 2023-12-04
+  targets: "TinyDir <= 1.2.5; CVE-2023-49287; CVSS 3.1 7.7"
+  covers: "Researcher's announcement linking the vendor GHSA and a full advisory copy; same text posted to oss-security (http://www.openwall.com/lists/oss-security/2023/12/04/1, also fetched 2026-11-11, same title and author)."
+  assumes: none
+  scores: {directness: 4, currency: 5, depth: 2, activity: 1, cost: 5, accessibility: 4}
+  verified: 2026-11-11
+  status: ok
+- id: tinydir-packetstorm-176060
+  title: "TinyDir-1.2.5 Buffer Overflow (Packet Storm 176060)"
+  url: http://packetstormsecurity.com/files/176060/TinyDir-1.2.5-Buffer-Overflow.html
+  tier: T3
+  verified: null
+  status: unverified     # 301 to packetstorm.news, which returned only a bot-check interstitial; not retried or bypassed
 - id: iperf-ghsa-8xx8-qrh3-q8mq
   title: "CVE-2025-54349 (GHSA-8xx8-qrh3-q8mq)"   # page title as relayed by fetch; description: "iperf_auth.c has an off-by-one error and resultant heap-based buffer overflow"
   url: https://github.com/advisories/GHSA-8xx8-qrh3-q8mq
@@ -232,3 +337,5 @@ D1 is a poor fit in the intrinsic sense: FND-01 teaches workstation setup and a 
 - Search-engine results used only as leads and not cited as sources: Debian tracker, Red Hat Bugzilla, distro patch pages, SentinelOne, others.
 
 - 2026-11-11 additions: https://cveawg.mitre.org/api/cve/CVE-2025-54349 ; https://github.com/esnet/iperf/commit/4e5313bab0b9b3fe03513ab54f722c8a3e4b7bdf ; https://github.com/esnet/iperf (re-fetched)
+
+- 2026-11-11 additions (TinyDir): https://cveawg.mitre.org/api/cve/CVE-2023-49287 ; https://github.com/cxong/tinydir/commit/8124807260735a837226fa151493536591f6715d ; GHSA page re-fetched
