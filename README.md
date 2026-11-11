@@ -200,9 +200,44 @@ Pick one after section 5. Each assumes sections 1 to 5.
 
 | | Resource | Cost | Effort | Notes |
 |---|---|---|---|---|
-| Paid | [RET2 Fundamentals of Browser Exploitation](https://ret2.io/trainings) | $3,499 | 1 to 2 weeks full time | Ends on a Chrome N-day. No free course of similar scope found yet |
+| Core | [Chrome Browser Exploitation series](https://jhalon.github.io/chrome-browser-exploitation-1/) (Jack Halon) | Free | Series | Free path into V8 internals and exploitation |
+| Ref | [V8 docs](https://v8.dev/docs) | Free | | Engine internals, building and debugging V8 |
+| Ref | [Chromium security FAQ](https://chromium.googlesource.com/chromium/src/+/main/docs/security/faq.md) | Free | | What Chrome counts as a security bug |
+| Practice | [Fuzzilli](https://github.com/googleprojectzero/fuzzilli) (Project Zero) | Free | | JavaScript engine fuzzer |
+| Paid | [RET2 Fundamentals of Browser Exploitation](https://ret2.io/trainings) | $3,499 | 1 to 2 weeks full time | Ends on a Chrome N-day |
+| Paid | [Zero Day Engineering trainings](https://zerodayengineering.com/training/) | Price not listed | 4 days live or 3 months self-paced | Includes a Chrome full-chain course |
 
-**Embedded and firmware, mobile, hypervisors**: not sourced yet. Help wanted, see [CONTRIBUTING.md](CONTRIBUTING.md). One verified lead: [Azeria Labs ARM assembly](https://azeria-labs.com/writing-arm-assembly-part-1/) (free, 2017, 32-bit ARM).
+**Embedded and firmware**
+
+| | Resource | Cost | Effort | Notes |
+|---|---|---|---|---|
+| Core | [Azeria Labs: ARM assembly](https://azeria-labs.com/writing-arm-assembly-part-1/) | Free | 7 parts | 32-bit ARM, 2017. Leads into ARM exploit development |
+| Core | [Architecture 4001](https://ost2.fyi/Arch4001) (OST2) | Free | | Firmware course |
+| Core | [binwalk](https://github.com/ReFirmLabs/binwalk) | Free | | Firmware extraction |
+| Core | [FirmAE](https://github.com/pr0v3rbs/FirmAE) | Free | | Emulate extracted firmware so you can test it on a laptop |
+| Ref | [EMBA](https://github.com/e-m-b-a/emba) | Free | | Automated firmware analysis |
+| Practice | [Damn Vulnerable Router Firmware](https://github.com/praetorian-inc/DVRF) | Free | | Intentionally vulnerable router firmware |
+| Paid | [The Hardware Hacking Handbook](https://nostarch.com/hardwarehacking) (No Starch) | Paid | Book | Physical attacks and hardware interfaces |
+
+**Mobile (Android first)**
+
+| | Resource | Cost | Effort | Notes |
+|---|---|---|---|---|
+| Core | [Android security overview](https://source.android.com/docs/security/overview) | Free | | Platform security model |
+| Core | [OWASP MASTG](https://mas.owasp.org/MASTG/) | Free | | Mobile app testing guide |
+| Practice | [Android security bulletins](https://source.android.com/docs/security/bulletin) | Free | Monthly | Pick a fixed bug, diff the patch, reproduce it |
+| Paid | [Hexacon trainings](https://www.hexacon.fr/trainings/) | Price not listed | | 2026 list included Exploiting the Android Kernel |
+
+**Hypervisors**
+
+| | Resource | Cost | Effort | Notes |
+|---|---|---|---|---|
+| Core | [QEMU developer docs](https://www.qemu.org/docs/master/devel/index.html) | Free | | Device emulation code is the main attack surface |
+| Ref | [google/security-research PoCs](https://github.com/google/security-research/tree/master/pocs) | Free | | Published exploits to study |
+| Paid | [Zero Day Engineering trainings](https://zerodayengineering.com/training/) | Price not listed | 4 days live or 3 months self-paced | Hypervisor VR and exploit-engineering courses |
+| Paid | [Hexacon trainings](https://www.hexacon.fr/trainings/) | Price not listed | | 2026 list included Bug Hunting in Hypervisors |
+
+Embedded, mobile and hypervisor rows were checked by hand on 2026-11-11. Their descriptions are thin and need filling in: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### 7. Final project
 

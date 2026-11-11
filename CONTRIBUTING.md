@@ -10,7 +10,7 @@ OSVR is a list of existing resources, not a course. Contributions are about whic
   - which section and which row it would add to or replace;
   - why it is better than what is there (exercises? more current? covers a gap?);
   - any stated effort (hours, challenge count) from the provider's own page.
-- **Fill a gap**: the Embedded/firmware, Mobile and Hypervisor specialisations have no sourced resources yet. Free browser-exploitation material is also missing.
+- **Fill a gap**: the Embedded/firmware, Mobile and Hypervisor specialisations have only a few rows, with thin descriptions. Stated effort, last-updated dates and better free courses are all wanted.
 
 ## Rules for a resource
 
