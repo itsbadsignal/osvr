@@ -1,6 +1,6 @@
 # OSVR: Open Security Vulnerability Research
 
-OSVR is a curated, ordered path through **existing** learning resources (courses, wargames, books, papers, docs) for vulnerability research, in the style of [OSSU](https://github.com/ossu/computer-science). It takes a self-taught learner from "can use a terminal" to finding, root-causing, exploiting and disclosing previously unknown vulnerabilities.
+OSVR is a curated, ordered path through **existing** learning resources (courses, wargames, books, papers, docs) for vulnerability research. It takes a self-taught learner from "can use a terminal" to finding, root-causing, exploiting and disclosing previously unknown vulnerabilities.
 
 **OSVR does not write course content.** No modules, lessons, drills, flashcards, labs, rubrics or coaching. The work is choosing, ordering, verifying and maintaining links to other people's material. If a request would add original teaching content, say so and ask before doing it.
 
@@ -60,4 +60,4 @@ All hands-on work in the curriculum happens in labs the learner controls, on CTF
 
 ## Writing style
 
-Direct, no filler, few em dashes. Notes column: one short line.
+Direct, no filler. Never use em dashes (—) or en dashes (–); use commas, colons, full stops or "to" for ranges. Notes column: one short line.

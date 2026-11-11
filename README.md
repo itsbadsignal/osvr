@@ -2,7 +2,7 @@
 
 A path through existing, mostly free resources that takes you from "can use a terminal" to finding, root-causing, exploiting and disclosing previously unknown vulnerabilities. Nothing here is original course material: OSVR picks the best existing courses, wargames, books and papers, puts them in order, and says why each one is there.
 
-Modelled on [OSSU](https://github.com/ossu/computer-science). See [FAQ.md](FAQ.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
+See [FAQ.md](FAQ.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Contents
 
