@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Enforces the OSVR commit convention (see CONTRIBUTING.md, "Commit messages").
+set -euo pipefail
+
+msg_file="$1"
+# Drop comment lines and trailing blank lines, as git does.
+msg="$(grep -v '^#' "$msg_file" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')"
+subject="$(printf '%s\n' "$msg" | head -n1)"
+
+# Let git's own generated messages through.
+if [[ "$subject" =~ ^(Merge|Revert\ \"|fixup!|squash!|amend!) ]]; then
+  exit 0
+fi
+
+types='add|remove|replace|fix|update|reorder|research|docs|chore'
+scopes='foundations|re|bx|vd|pro|kernel|windows|browser|embedded|mobile|hv|final|extras|repo'
+pattern="^($types)\(($scopes)\): [a-z0-9].*[^.]$"
+
+fail() {
+  echo "commit-msg: $1" >&2
+  echo "  subject was: $subject" >&2
+  echo "  expected:    <type>(<scope>): <summary>" >&2
+  echo "  types:       ${types//|/, }" >&2
+  echo "  scopes:      ${scopes//|/, }" >&2
+  echo "  see CONTRIBUTING.md, \"Commit messages\"" >&2
+  exit 1
+}
+
+[[ "$subject" =~ $pattern ]] || fail "subject does not match the convention"
+(( ${#subject} <= 72 )) || fail "subject is ${#subject} characters (max 72)"
+
+if printf '%s' "$msg" | grep -qP '[\x{2013}\x{2014}]'; then
+  fail "message contains an em or en dash; use a comma, colon or full stop"
+fi
+
+# Second line must be blank if there is a body.
+if [[ $(printf '%s\n' "$msg" | wc -l) -gt 1 ]] && [[ -n "$(printf '%s\n' "$msg" | sed -n 2p)" ]]; then
+  fail "leave a blank line between the subject and the body"
+fi
+
+# New or replacement resources must say when they were checked.
+type="${subject%%(*}"
+if [[ "$type" == "add" || "$type" == "replace" ]]; then
+  printf '%s\n' "$msg" | grep -qE '^Verified: [0-9]{4}-[0-9]{2}-[0-9]{2}' \
+    || fail "add/replace commits need a 'Verified: YYYY-MM-DD' trailer in the body"
+fi

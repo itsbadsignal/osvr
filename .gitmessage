@@ -1,0 +1,9 @@
+# <type>(<scope>): <summary, lowercase, imperative, max 72 chars, no full stop>
+#
+# Why the change. For add/replace: what it beats and why.
+#
+# Verified: YYYY-MM-DD   (required for add and replace)
+#
+# types:  add remove replace fix update reorder research docs chore
+# scopes: foundations re bx vd pro kernel windows browser embedded mobile hv
+#         final extras repo

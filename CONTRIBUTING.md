@@ -24,3 +24,61 @@ OSVR is a list of existing resources, not a course. Contributions are about whic
 ## Format
 
 Rows in README.md use `| | Resource | Cost | Effort | Notes |`, where the first column is `Core`, `Alt`, `Ref`, `Practice`, `Read` or `Paid` (definitions in [CLAUDE.md](CLAUDE.md)).
+
+## Commit messages
+
+```
+<type>(<scope>): <summary>
+
+<body: why the change; for add/replace, what it beats>
+
+Verified: YYYY-MM-DD
+```
+
+- **Subject**: lowercase, imperative ("add", not "added"), max 72 characters, no full stop.
+- **Body**: optional, separated by a blank line.
+- **Verified trailer**: required for `add` and `replace`. It is the date you opened the page and confirmed it says what the row claims.
+- No em or en dashes anywhere.
+
+| Type | Use for |
+|---|---|
+| `add` | a new resource row |
+| `remove` | a resource row taken out |
+| `replace` | one resource swapped for another in the same slot |
+| `fix` | a dead or moved link, or a wrong fact (price, effort, author) |
+| `update` | a note, caveat or "last checked" date |
+| `reorder` | rows or sections moved, nothing added or removed |
+| `research` | files under `research/` |
+| `docs` | README intro, FAQ, CONTRIBUTING, CLAUDE.md |
+| `chore` | hooks, config, tooling |
+
+Scopes: `foundations`, `re`, `bx`, `vd`, `pro`, `kernel`, `windows`, `browser`, `embedded`, `mobile`, `hv`, `final`, `extras`, or `repo` for changes that cross sections.
+
+Examples:
+
+```
+add(vd): add oss-fuzz introspector as a ref row
+
+Shows which code a project's fuzzers never reach, which is where
+to start an audit.
+
+Verified: 2026-11-11
+```
+
+```
+fix(bx): update ropemporium link after site move
+```
+
+### Hooks
+
+The repo ships hooks in `.githooks/`. Enable them once per clone:
+
+```sh
+git config core.hooksPath .githooks
+git config commit.template .gitmessage
+```
+
+- `commit-msg` checks the format above.
+- `pre-commit` checks staged Markdown for em/en dashes, and README rows for unknown labels or `http://` links.
+
+Both are offline and fast. Bypass in an emergency with `git commit --no-verify`.

@@ -58,6 +58,10 @@ All hands-on work in the curriculum happens in labs the learner controls, on CTF
 | `researcher` | Find candidate resources for a section, fetch and verify them, write findings to `research/` |
 | `maintainer` | Re-check every link in README.md, flag dead/moved/changed resources, propose replacements via the researcher |
 
+## Commits
+
+Only the repo owner commits. Never run `git commit`. Commit messages follow the convention in CONTRIBUTING.md, enforced by `.githooks/`.
+
 ## Writing style
 
-Direct, no filler. Never use em dashes (—) or en dashes (–); use commas, colons, full stops or "to" for ranges. Notes column: one short line.
+Direct, no filler. Never use em dashes or en dashes (U+2014, U+2013); use commas, colons, full stops or "to" for ranges. Notes column: one short line.
