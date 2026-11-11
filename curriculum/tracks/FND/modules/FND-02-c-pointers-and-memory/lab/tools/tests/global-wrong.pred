@@ -1,0 +1,7 @@
+kind: global-buffer-overflow
+op: READ
+size: 1
+offset: 4 bytes after
+region: 8
+frame0: main:9
+alloc: table

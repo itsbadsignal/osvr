@@ -1,0 +1,7 @@
+kind: heap-buffer-overflow
+op: WRITE
+size: 4
+offset: 0 bytes after
+region: 4
+frame0: main:19
+alloc: bonus

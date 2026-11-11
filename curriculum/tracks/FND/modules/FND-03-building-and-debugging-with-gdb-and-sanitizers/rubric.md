@@ -1,0 +1,30 @@
+# Rubric: FND-03-building-and-debugging-with-gdb-and-sanitizers
+
+Automated checks (`lab/check.sh`, host side; exit 0 = outcome pass; see `lab/SPEC.md` for exactly what each mode asserts):
+- `check.sh challenge`: the struggle-challenge build and `answers.md`.
+- `check.sh project`: runs the learner's `build-asan.sh` twice from a fresh copy of `/src/cjson` and re-verifies instrumentation independently of the script's own output.
+- `/opt/osvr/fnd03/tools/mystery-check` (inside the image): Drill 2.
+
+Feedback type: the checkers give **outcome** feedback. The assessor gives **informational** feedback (which criterion failed and where) first, and **corrective** feedback (the specific change) only after the learner has attempted a revision.
+
+Reference facts for the assessor (derived by the module-builder in the lab, 2026-11-11, gcc 14.2.0-19, cmake 3.31.6; re-derive if the lab differs):
+- With `-DENABLE_SANITIZERS=ON` and no sanitizer flags of one's own: `ctest` 19/19 pass; `tests/parse_examples` has 0 `__asan_report` and 11 `__ubsan_handle` symbols; only `libubsan.so.1` linked. `CMakeCache.txt`: `FLAG_SUPPORTED_fsanitizeaddress`, `FLAG_SUPPORTED_01`, `FLAG_SUPPORTED_fsanitizeinteger` empty; `fsanitizeundefined`, `fsanitizefloatcastoverflow`, `fsanitizeaddressuseafterscope`, `fnosanitizerecover` = 1.
+- Cause: `CMakeLists.txt` lines 98 to 106 run `CHECK_C_COMPILER_FLAG` per flag; the configure log shows the test compiled with `-fsanitize=address` and linked without it, failing with `undefined reference to '__asan_init'`. `-01` (lines 64 to 76; digit zero) is not a valid option; `-fsanitize=integer` is Clang-only. Verdicts: address check wrong, the other two correct. `-01` was removed before v1.7.18 (`git log -S`); the flag list and check loop are otherwise unchanged in v1.7.18 and v1.7.19.
+- With explicit `CMAKE_C_FLAGS="-g -O0 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined"`: 19/19 pass, `tests/parse_examples` has 9 `__asan_report` symbols, `libasan.so.8` and `libubsan.so.1` linked; `cJSON.c.o` for the library has 8.
+- Tests include `../cJSON.c` via `tests/common.h` line 26, so each test executable carries its own instrumented copy of the library.
+- Challenge answers: `file_test3_should_be_parsed_and_printed`, `inputs/test3`, `width`, `500`.
+
+## Struggle challenge (formative, not graded for the module pass)
+Graded by `check.sh challenge` plus a 2-minute assessor read of `evidence.txt`. The learner records whether they passed cold, after the worked example, or after hints; that goes in the session log, not the grade.
+
+## Project deliverables
+
+| Deliverable | Not yet | Pass | Strong pass |
+|---|---|---|---|
+| `build-asan.sh` | `check.sh project` fails; or the script builds inside `/src/cjson`; or it relies on `ENABLE_SANITIZERS` alone for ASan; or its verify stage would pass a build with `libasan` linked and 0 `__asan_report` symbols (assessor tests this by reading the check, not by trust) | `check.sh project` exits 0 on two clean runs. Verify stage checks both instrumentation (`nm`) and runtime (`ldd`) for every `ctest` executable and `libcjson.so`, and exits 1 when either is missing. Stages commented | Also: the list of executables comes from the build (for example `ctest -N` or `compile_commands.json`), not a hard-coded list; UBSan fatality is verified behaviourally (a one-line UBSan tripwire built with the same flags exits non-zero), not only by grepping the flag |
+| `rootcause.md` | Says "ASan is unsupported by gcc", or blames gcc/CMake without the log evidence; or gives no line numbers; or misses that the failure is silent | Lines 64 to 76 and 98 to 106 cited at `87d8f096`; the configure-log compile and link commands quoted; the `__asan_init` link error quoted; states that the flag was silently dropped and UBSan kept; names `-01` and `-fsanitize=integer` with a correct reason for each | Also: states the broken assumption precisely (a compile-only check cannot validate a flag that also needs a link-time runtime; the check links without the flag); verdicts correct/wrong for all three; later-tag comparison with commands; impact paragraph explains why 19/19 passing is misleading |
+| `debug-log.md` | Any answer without a transcript; or Q2 counted with an unscoped `break parse_object` without discussing other locations; or Q3's shadow address not computed | Three answers, each with a `gdb -nx` transcript that shows the evidence. Q2 uses a scoped breakpoint and an ignore count. Q3 stops before the report (`break __asan_report_store1` or equivalent), computes `(addr >> 3) + 0x7fff8000` by hand, and reads the shadow byte | Also: Q2 shows the unscoped count as well and explains the difference; Q3 explains the shadow byte value from the legend and predicts it before reading it; every command is reproducible as a single `gdb -batch` line |
+| `feynman.md` | Over 400 words; or uses build-system terms without plain explanation; or does not say why passing tests were not evidence | Under 400 words. A non-specialist could follow all four required points | Also: one mechanically accurate analogy (it predicts that a check can pass while the thing checked is missing), and states what is not known (whether newer versions are affected, unless Variation 4 was done) |
+| `bug-report.md` | A maintainer could not reproduce from it; or affected versions stated beyond what was checked; or written as a security advisory | All headings present; paste-able steps that reproduce on a clean `debian:trixie`-based lab; expected vs actual with `nm`/`ldd` output; root cause to the line; a suggested fix; a user workaround; duplicate-search line present and honest | Also: suggested fix tested (Variation 1) and its evidence included; versions stated "as of commit X" with the command; tone and length a busy maintainer would read (under one screen before the details) |
+
+Pass the module: all project deliverables at Pass or above, and drills "Owned when" met (self-reported in session logs, spot-checked by `/coach`; Drill 2 by `mystery-check` output).

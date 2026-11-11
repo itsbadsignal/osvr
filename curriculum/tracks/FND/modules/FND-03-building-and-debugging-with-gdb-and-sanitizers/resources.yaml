@@ -1,0 +1,204 @@
+# Resources for FND-03-building-and-debugging-with-gdb-and-sanitizers. Cards copied verbatim from research/ (schema: templates/resource-card.yaml).
+# D7: every card needs verified within 180 days and status ok. Max 3 with role: core.
+# Sources: research/domain-maps/foundations.md (section D and 'FND-01 lab sources'), research/targets/FND.md (cJSON issue 800 card).
+# Only `role` was set by the module-builder; other fields are as filed. 'FND-03 use' comments are the module-builder's.
+# TODO(research): no CMake or GNU make documentation is filed (CMAKE_C_FLAGS, CheckCCompilerFlag, CMAKE_EXPORT_COMPILE_COMMANDS,
+#   CMakeConfigureLog.yaml, ctest working directory; make command-line variable override). The README states these from lab observation.
+# TODO(research): the ASan paper PDF or the sanitizers project's algorithm page (shadow mapping, redzones, quarantine) is not filed;
+#   the README derives the shadow check from disassembly instead.
+# TODO(research): no source filed for the ASAN_OPTIONS flags used (abort_on_error, detect_leaks, malloc_fill_byte, help);
+#   the README cites the runtime's own ASAN_OPTIONS=help=1 output in the lab.
+# TODO(research): the cjson-issue-800 card below lacks author, kind, cost, published, targets, assumes and status in research/targets/FND.md.
+
+resources:
+  - title: "Debugging with GDB (current manual)"
+    url: "https://sourceware.org/gdb/current/onlinedocs/gdb.html/"
+    author: "GDB developers / Free Software Foundation"
+    kind: docs
+    tier: T1
+    cost: free
+    published: 2026-11-10
+    targets: "GDB 19.0.50.20261110-git (development snapshot; the stable release is older). Local: GDB 18.1"
+    covers: "Stopping/continuing, reverse execution, record/replay, examining the stack and data, Python API"
+    assumes: "none"
+    scores: {directness: 5, currency: 5, depth: 5, activity: 1, cost: 5, accessibility: 3}
+    role: core
+    verified: 2026-11-10
+    status: ok
+    # Pinned to a development snapshot; for stable use the release docs matching the learner's gdb version.
+  # FND-03 use: the reference for every gdb command in this module (breakpoints and locations, ignore counts, frames, print/x, finish, watchpoints). Look things up here; do not read it cover to cover.
+
+  - title: "AddressSanitizer (Clang documentation)"
+    url: "https://clang.llvm.org/docs/AddressSanitizer.html"
+    author: "LLVM project"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "Clang/LLVM current docs (copyright 2007-2026); Linux, macOS, Android, FreeBSD, NetBSD, Windows 8.1+"
+    covers: "Detects heap/stack/global OOB, UAF, UAR, use-after-scope, double/invalid free, leaks; about 2x slowdown; recommends -O1+, -g, -fno-omit-frame-pointer; no static linking; not for production"
+    assumes: "C/C++ build basics"
+    scores: {directness: 5, currency: 5, depth: 3, activity: 2, cost: 5, accessibility: 4}
+    role: core
+    verified: 2026-11-10
+    status: ok
+    # Page does not discuss shadow memory, redzones, intra-object overflow or uninitialised reads.
+  # FND-03 use: what ASan detects and the recommended flags. gcc's ASan in the lab uses the same runtime family and report format (the reports in this module are gcc's).
+
+  - title: "Instrumentation Options (GCC manual): -fsanitize=address, undefined, -fsanitize-recover"
+    url: "https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html"
+    author: "GNU Project"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "current GCC docs"
+    covers: "Sanitizer flags; UBSan sub-check list; no unsigned-overflow check under undefined; recovery off by default only for address"
+    assumes: "gcc usage"
+    scores: {directness: 5, currency: 5, depth: 3, activity: 1, cost: 5, accessibility: 3}
+    role: core
+    verified: 2026-11-10
+    status: ok
+  # FND-03 use: the compiler you actually use. UBSan sub-checks and the recovery default (-fno-sanitize-recover).
+
+  - title: "Compiler Options Hardening Guide for C and C++"
+    url: "https://best.openssf.org/Compiler-Hardening-Guides/Compiler-Options-Hardening-Guide-for-C-and-C++.html"
+    author: "OpenSSF Best Practices Working Group"
+    kind: docs
+    tier: T1
+    cost: free
+    published: 2026-08-20
+    targets: "GCC and Clang; minimum versions per flag"
+    covers: "Hardening flags, their purpose and minimum compiler versions; notes FORTIFY_SOURCE incompatibility with sanitizers"
+    assumes: "compiler basics"
+    scores: {directness: 5, currency: 5, depth: 4, activity: 1, cost: 5, accessibility: 3}
+    role: reference
+    verified: 2026-11-10
+    status: ok
+    # Only the first 100,000 of 187,653 characters were read (flag table). Defaults-per-distro not covered here.
+  # FND-03 use: why FORTIFY stays off in sanitizer builds; what the hardening flags in a project's build files do.
+
+  - title: "dpkg-buildflags(1)"
+    url: "https://manpages.debian.org/unstable/dpkg-dev/dpkg-buildflags.1.en.html"
+    author: "Debian dpkg project"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "Debian unstable dpkg; features with 'since' versions up to 1.22.0"
+    covers: "Which hardening features are default (format, fortify, stackprotectorstrong, stackclash, branch, relro) and which are opt-in (bindnow); pie follows gcc default per arch"
+    assumes: "packaging basics"
+    scores: {directness: 4, currency: 4, depth: 3, activity: 1, cost: 5, accessibility: 3}
+    role: reference
+    verified: 2026-11-10
+    status: ok
+  # FND-03 use: Debian package-build defaults, to contrast with the bare gcc defaults you measure in the lab.
+
+  - title: "podman-run (Podman documentation, man page)"
+    url: "https://docs.podman.io/en/latest/markdown/podman-run.1.html"
+    author: "Podman project"
+    kind: docs
+    tier: T1
+    cost: free
+    published: unknown
+    targets: "Podman latest docs (page text 145k chars; both halves read via offset)"
+    covers: "--userns=keep-id with suboptions uid=, gid=, size= (size unsupported as root); --volume :z (shared relabel), :Z (private relabel), :U (chown host source to container UID/GID; slow, modifies host); --security-opt seccomp=unconfined|file.json; --privileged disables seccomp; default seccomp profile applied unless overridden."
+    assumes: "container basics"
+    scores: {directness: 5, currency: 5, depth: 3, activity: 3, cost: 5, accessibility: 4}
+    role: reference
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: --security-opt seccomp=unconfined behind ASLR_OFF=1, and the bind-mount options run.sh uses.
+
+  - title: "Intermittent mozpack.errors.ErrorMessage: Error while signing ../../dist/firefox/libsoftokn3.so (Bugzilla 1545095)"
+    url: "https://bugzilla.mozilla.org/show_bug.cgi?id=1545095"
+    author: "Mozilla (reporter Narcis Beleuzu; patch by Wander Lairson Costa)"
+    kind: writeup
+    tier: T2
+    cost: free
+    published: unknown
+    targets: "Mozilla CI docker-worker v201904171218, ASan builds (2019, fixed mozilla70)"
+    covers: "Real-world report: LSan fatal error attributed to ptrace restrictions in newer Docker. Quote from patch description: 'In newer docker versions the LeakSanitizer will fail unless it runs in a privileged container.' Fix was to disable LSan in ASan builds; ASAN_OPTIONS detect_leaks=0 was suggested. allowPtrace reportedly did not help there. 2019 evidence, one CI environment, not a statement about current Docker."
+    assumes: "ASan/LSan basics"
+    scores: {directness: 3, currency: 2, depth: 2, activity: 1, cost: 5, accessibility: 3}
+    role: reference
+    verified: 2026-11-11
+    status: ok
+  # FND-03 use: real-world case of LeakSanitizer failing under ptrace restrictions; the README's 'in the wild' entry.
+
+  - title: "GEF (GDB Enhanced Features)"
+    url: "https://github.com/hugsy/gef"
+    author: "hugsy"
+    kind: tool
+    tier: T2
+    cost: free
+    published: unknown
+    targets: "GDB 10.0+ with Python 3.10+; Python 3 only; x86, ARM, AArch64, MIPS, SPARC, PowerPC"
+    covers: "Single-file GDB script, no external dependencies; MIT; 2,511 commits"
+    assumes: "gdb basics"
+    scores: {directness: 5, currency: 4, depth: 3, activity: 2, cost: 5, accessibility: 4}
+    role: reference
+    verified: 2026-11-10
+    status: ok
+    # Easier in odd environments (single file, minimal deps). Latest release not shown on page.
+  # FND-03 use: the extension the base image loads by default. This module uses gdb -nx; GEF's context view matters from FND-06.
+
+  - title: "AddressSanitizer: A Fast Address Sanity Checker (USENIX ATC '12)"
+    url: "https://www.usenix.org/conference/atc12/technical-sessions/presentation/serebryany"
+    author: "Konstantin Serebryany, Derek Bruening, Alexander Potapenko, Dmitriy Vyukov"
+    kind: paper
+    tier: T1
+    cost: free
+    published: 2012
+    targets: "C/C++; paper reports 73% average slowdown and 300+ Chromium bugs"
+    covers: "Design (specialised allocator plus instrumentation); only the abstract page was read, not the PDF"
+    assumes: "systems background"
+    scores: {directness: 3, currency: 3, depth: 5, activity: 1, cost: 5, accessibility: 2}
+    role: deep-dive
+    verified: 2026-11-10
+    status: ok
+    # Shadow-memory mechanism not on the fetched page; fetch the PDF before citing mechanism.
+  # FND-03 use: the design paper behind the shadow-memory mechanism you derive from disassembly. Only the abstract page is filed; fetch the PDF before quoting mechanism from it.
+
+  - title: "pwndbg (GitHub)"
+    url: "https://github.com/pwndbg/pwndbg"
+    author: "pwndbg project"
+    kind: tool
+    tier: T2
+    cost: free
+    published: unknown
+    targets: "GDB 12.1+ (Ubuntu 22.04/24.04 battle-tested), Python 3.10+; experimental LLDB 19+; qemu-user needs QEMU 8.1+, qemu-system 6.2+"
+    covers: "GDB/LLDB plug-in for exploit developers; MIT; positions itself against PEDA, GEF, gdbinit"
+    assumes: "gdb basics; install steps are on pwndbg.re/stable/setup (not read)"
+    scores: {directness: 5, currency: 5, depth: 3, activity: 2, cost: 5, accessibility: 4}
+    role: alternative
+    verified: 2026-11-10
+    status: ok
+  # FND-03 use: alternative to GEF if you prefer it; not installed in the lab image.
+
+  - title: "Debuggers 1012: Introductory GDB (OpenSecurityTraining2)"
+    url: "https://p.ost2.fyi/courses/course-v1:OpenSecurityTraining2+Dbg1012_IntroGDB+2024_v1/about"
+    author: "Xeno Kovah (OpenSecurityTraining2)"
+    kind: course
+    tier: T2
+    cost: free
+    published: 2024
+    targets: "gdb"
+    covers: "Mini-course to use gdb well enough for Arch1001 (x86-64) or Arch1005 (RISC-V); topic list not on page (search snippets mention breakpoints, registers/memory, stepping, attaching)"
+    assumes: "Comfort with C and one assembly language"
+    scores: {directness: 4, currency: 4, depth: 3, activity: 3, cost: 5, accessibility: 3}
+    role: alternative
+    verified: 2026-11-10
+    status: ok
+    # Duration not stated. Course page requires OST2 account for content (not tested). Prerequisite includes assembly, so for OSVR's order (asm after) it may be better used inside FND-06.
+  # FND-03 use: an outside gdb course if you want a second explanation. It assumes one assembly language, so it may fit better alongside FND-06.
+
+  - id: cjson-issue-800
+    title: "cJSON issue 800: Out-of-bounds read in parse_string (CVE-2023-53154)"
+    url: https://github.com/DaveGamble/cJSON/issues/800
+    tier: T1
+    verified: 2026-11-10
+    covers: PoC `{"1":1,`, why exact-size buffers expose the bug, fuzz harness blind spot
+    role: reference
+    status: ok   # added by module-builder (as in FND-02): verified date present, no problem reported; research card omits status
+    # FND-03 use: the "fuzz harness hid the bug" entry in Where this shows up in the wild. Do not read the fix discussion during FND-03.

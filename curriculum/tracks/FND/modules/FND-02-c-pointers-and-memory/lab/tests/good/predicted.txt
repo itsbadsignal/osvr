@@ -1,0 +1,5 @@
+kind: heap-buffer-overflow
+op: WRITE size 1
+region: 256
+frame0: main
+alloc: decrypt

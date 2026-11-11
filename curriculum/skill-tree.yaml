@@ -1,0 +1,797 @@
+# OSVR skill tree. Source of truth for sequencing.
+# Validate with: python3 scripts/validate.py --tree-only
+# Decisions: DR-0001 (track set, core sequencing), DR-0002 (outcome wording, proposed),
+#            DR-0003 (first real-bug target class), DR-0004 (conditional D5),
+#            DR-0005 (conditional programming on-ramp FND-00), DR-0006 (capstones under tracks/CAP)
+#
+# Optional field `conditional:` (DR-0005): one-line gate. Nodes carrying it are taken only
+# when the gate says so; core hours are reported with and without them.
+#
+# Node fields: see templates/skill-tree.example.yaml.
+# Nodes are listed in the RECOMMENDED core study order (DR-0001 option D2), not grouped
+# by track. Prereqs are honest minimums; the DAG permits earlier starts than this order.
+# All hours are pilot parameters (no provider publishes hours from zero;
+# research/benchmarks/curricula-and-trainings.md "Hour totals from zero").
+# Mitigation lists name what is in play; per-version claims for glibc, Windows and
+# embedded defaults are unverified (FIELD-SYNTHESIS Q2-Q4) and marked TODO(research).
+
+version: 1
+updated: 2026-11-10
+
+tracks:
+  FND: {title: Foundations, core: true}
+  RE:  {title: Reverse engineering, core: true}
+  BX:  {title: Binary exploitation (userland), core: true}
+  VD:  {title: Vulnerability discovery, core: true}
+  PRO: {title: Professional practice and disclosure, core: true}
+  CAP: {title: Graduation capstones, core: true}
+  # Electives, recommended order by first-0-day reachability and hiring value (DR-0001)
+  EMB: {title: "Embedded, firmware and appliances", core: false}
+  LK:  {title: Linux kernel, core: false}
+  HV:  {title: Hypervisors and device emulation, core: false}
+  WIN: {title: Windows user and kernel, core: false}
+  MOB: {title: Mobile (Android first), core: false}
+  BRW: {title: Browsers and JS engines, core: false}
+
+nodes:
+  # ---------------------------------------------------------------- core, hours 0-40
+  - id: FND-01-linux-lab-and-learning-protocol
+    title: Linux workstation, the OSVR lab and the session protocol
+    track: FND
+    status: ready
+    prereqs: []
+    outcomes: [rootcause]
+    hours: 8   # pilot parameter; recounted in fix round 1 (README breakdown). Excludes the 90-min DR-0005 diagnostic
+    rds: "running a declared-goal, timeboxed session that ends with free recall and a logged next step"
+    mitigations: []
+    direct_target: "cJSON v1.7.17 (87d8f0961a01bf09bef98ff89bae9fdec42181ee), CVE-2023-53154 PoC under ASan as lab smoke test, negative control at fix 3ef4e4e730e5efd381be612df41e1ff3f5bb3c32; no root-causing (FND-03/04)"
+    # Includes the short self-regulated-learning primer (learning-science.md section 11).
+
+  - id: FND-00-programming-on-ramp
+    title: "Programming on-ramp in C: write, compile and debug small programs"
+    track: FND
+    status: planned
+    prereqs: []
+    conditional: "only if the learner fails the FND-00 diagnostic (taken after FND-01, linked from FND-02 prerequisite check)"
+    outcomes: [rootcause]
+    hours: 30
+    rds: "turning a compiler error or a wrong output into the specific line that causes it, and fixing it"
+    mitigations: []
+    direct_target: ""
+    # DR-0005: second root, deliberately NOT a prereq of FND-01/FND-02 (prereq honesty).
+    # Recommended order for non-programmers: FND-01 -> diagnostic -> FND-00 -> FND-02.
+    # C first for directness; pointers, heap and UB stay in FND-02/FND-05. Hours are a pilot parameter.
+
+  - id: FND-02-c-pointers-and-memory
+    title: "C I: pointers, arrays, strings and where objects live"
+    track: FND
+    status: drafting
+    prereqs: [FND-01-linux-lab-and-learning-protocol]
+    outcomes: [rootcause]
+    hours: 18
+    rds: "predicting where a C object lives and what writing past its end touches"
+    mitigations: []
+    direct_target: "iperf3 CVE-2025-54349 off-by-one heap overflow (CWE-193, GHSA-8xx8-qrh3-q8mq): root-cause from fix 4e5313bab0b9b3fe03513ab54f722c8a3e4b7bdf against parent 4eab661da0bbaac04493fa40164e928c6df7934a, reproduce the pattern in the learner's own program, then trigger the real bug in decode_auth_setting (iperf_auth.c:390) via a learner-written harness linked against ASan-built iperf_auth at both commits (check.sh realbug)"
+
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers
+    title: Building real C projects and debugging them with gdb and sanitizers
+    track: FND
+    status: drafting
+    prereqs: [FND-02-c-pointers-and-memory]
+    outcomes: [find, rootcause]
+    hours: 10
+    rds: "building an unfamiliar open-source project at a pinned commit with ASan/UBSan and debug symbols"
+    mitigations: []
+    direct_target: "cJSON v1.7.17 (87d8f0961a01bf09bef98ff89bae9fdec42181ee) as build/debug target: CMake test suite with ASan + fatal UBSan, gdb on tests/parse_examples; root-cause of the build defect where -DENABLE_SANITIZERS=ON silently drops -fsanitize=address on gcc 14 (derived in lab, 2026-11-11); CVE-2023-53154 not root-caused"
+
+  - id: FND-04-first-cve-crash-reproduction
+    title: Reproduce a real CVE crash and root-cause it to the line
+    track: FND
+    status: planned
+    prereqs: [FND-03-building-and-debugging-with-gdb-and-sanitizers]
+    outcomes: [rootcause, find]
+    hours: 6
+    rds: "walking an ASan report back from the crash frame to the line that broke the invariant"
+    mitigations: []
+    direct_target: ""
+    # FIRST REAL CVE CONTACT: ends at cumulative hour 40. Sanitizers are detection, not mitigation.
+
+  # ---------------------------------------------------------------- PRO woven in early
+  - id: PRO-01-ethics-scope-and-legal-landscape
+    title: Ethics, scope and the legal landscape for research
+    track: PRO
+    status: planned
+    prereqs: [FND-01-linux-lab-and-learning-protocol]
+    outcomes: [disclose]
+    hours: 4
+    rds: "deciding from a programme's published scope and safe-harbour text whether a planned test is in bounds"
+    mitigations: []
+    direct_target: ""
+
+  - id: PRO-02-advisories-cve-and-cwe
+    title: Reading advisories, the CVE system and CWE
+    track: PRO
+    status: planned
+    prereqs: [FND-04-first-cve-crash-reproduction]
+    outcomes: [disclose, map]
+    hours: 5
+    rds: "extracting affected versions, root cause, CWE and fix commit from a real advisory and its references"
+    mitigations: []
+    direct_target: ""
+
+  - id: FND-05-c-structs-integers-and-undefined-behaviour
+    title: "C II: structs, dynamic memory, integer semantics and undefined behaviour"
+    track: FND
+    status: planned
+    prereqs: [FND-03-building-and-debugging-with-gdb-and-sanitizers]
+    outcomes: [rootcause, find]
+    hours: 18
+    rds: "spotting the integer conversion or lifetime error that turns a length check into an out-of-bounds access"
+    mitigations: []
+    direct_target: ""
+
+  # ---------------------------------------------------------------- fuzzing in the first sixth
+  - id: VD-01-bug-classes-and-attack-surface
+    title: Bug classes (memory and logic) and attack-surface mapping
+    track: VD
+    status: planned
+    prereqs: [FND-04-first-cve-crash-reproduction, FND-05-c-structs-integers-and-undefined-behaviour]
+    outcomes: [map, rootcause]
+    hours: 10
+    rds: "listing the entry points of a real codebase and ranking them by how much attacker-controlled data they parse"
+    mitigations: []
+    direct_target: ""
+
+  - id: VD-02-fuzzing-harnesses-and-sanitizers
+    title: Coverage-guided fuzzing with harnesses and sanitizers
+    track: VD
+    status: planned
+    prereqs: [VD-01-bug-classes-and-attack-surface]
+    outcomes: [find]
+    hours: 18
+    rds: "writing a harness that reaches deep parser state rather than failing at the first validity check"
+    mitigations: []
+    direct_target: ""
+
+  # ---------------------------------------------------------------- machine level
+  - id: FND-06-x86-64-assembly-through-gdb
+    title: x86-64 assembly read and stepped through gdb
+    track: FND
+    status: planned
+    prereqs: [FND-05-c-structs-integers-and-undefined-behaviour]
+    outcomes: [rootcause, exploit]
+    hours: 22
+    rds: "reading a function's prologue, epilogue and stack frame live in gdb and mapping it back to C"
+    mitigations: []
+    direct_target: ""
+
+  - id: FND-07-linux-process-internals-elf-and-linking
+    title: "Linux process internals: ELF, loader, syscalls, virtual memory, PLT/GOT"
+    track: FND
+    status: planned
+    prereqs: [FND-06-x86-64-assembly-through-gdb]
+    outcomes: [rootcause, exploit, map]
+    hours: 16
+    rds: "tracing a library call from the call site through the PLT and GOT to libc in a running process"
+    mitigations: []
+    direct_target: ""
+
+  - id: FND-08-python-exploit-tooling
+    title: Python tooling for exploitation and research (pwntools, scripted debugging)
+    track: FND
+    status: planned
+    prereqs: [FND-07-linux-process-internals-elf-and-linking]
+    outcomes: [exploit, find]
+    hours: 8
+    rds: "scripting interaction with a target process and a debugger so every attempt is one command"
+    mitigations: []
+    direct_target: ""
+
+  - id: RE-01-static-re-with-a-decompiler
+    title: Static reverse engineering of stripped binaries
+    track: RE
+    status: planned
+    prereqs: [FND-07-linux-process-internals-elf-and-linking]
+    outcomes: [rootcause, map]
+    hours: 18
+    rds: "recovering a function's intent from stripped disassembly and correcting the decompiler where it is wrong"
+    mitigations: []
+    direct_target: ""
+
+  - id: RE-02-dynamic-re-and-instrumentation
+    title: Dynamic reverse engineering and instrumentation
+    track: RE
+    status: planned
+    prereqs: [RE-01-static-re-with-a-decompiler, FND-08-python-exploit-tooling]
+    outcomes: [rootcause, map]
+    hours: 12
+    rds: "placing breakpoints and hooks that answer one specific question about runtime state"
+    mitigations: []
+    direct_target: ""
+
+  # ---------------------------------------------------------------- stack exploitation, mitigation by mitigation
+  - id: BX-01-stack-overflow-to-control-flow
+    title: Stack overflow to controlled RIP and shellcode
+    track: BX
+    status: planned
+    prereqs: [FND-07-linux-process-internals-elf-and-linking, FND-08-python-exploit-tooling]
+    outcomes: [exploit]
+    hours: 12
+    rds: "computing the offset to saved RIP and verifying it in the debugger"
+    mitigations: []
+    # Legacy era on purpose: canary, NX and PIE disabled at build. Module must say so (D9)
+    # and point forward to BX-03/BX-04 where each is re-enabled.
+    direct_target: ""
+
+  - id: BX-02-format-string-bugs
+    title: Format string bugs as leak and write primitives
+    track: BX
+    status: planned
+    prereqs: [BX-01-stack-overflow-to-control-flow]
+    outcomes: [exploit, rootcause]
+    hours: 10
+    rds: "computing argument offsets and write sizes for a targeted write"
+    mitigations: [NX, partial-RELRO]
+    # TODO(research): current glibc/compiler FORTIFY behaviour for %n (Q2).
+    direct_target: ""
+
+  - id: BX-03-nx-canaries-and-rop
+    title: NX and stack canaries, bypassed with leaks and ROP
+    track: BX
+    status: planned
+    prereqs: [BX-01-stack-overflow-to-control-flow]
+    outcomes: [exploit]
+    hours: 16
+    rds: "finding and chaining gadgets under register and bad-byte constraints"
+    mitigations: [NX, stack-canary]
+    direct_target: ""
+
+  - id: VD-03-crash-triage-and-root-cause
+    title: Crash triage, minimisation and primitive identification
+    track: VD
+    status: planned
+    prereqs: [VD-02-fuzzing-harnesses-and-sanitizers, BX-01-stack-overflow-to-control-flow]
+    outcomes: [rootcause, find]
+    hours: 10
+    rds: "deciding from a minimised crash what primitive is reachable (read/write, size, control) and whether it is a duplicate"
+    mitigations: []
+    direct_target: ""
+
+  - id: BX-04-aslr-pie-relro-and-leaks
+    title: ASLR, PIE and RELRO, bypassed with info leaks and ret2libc
+    track: BX
+    status: planned
+    prereqs: [BX-02-format-string-bugs, BX-03-nx-canaries-and-rop]
+    outcomes: [exploit]
+    hours: 14
+    rds: "turning one info leak into the base addresses the rest of the chain needs"
+    mitigations: [NX, stack-canary, ASLR, PIE, full-RELRO]
+    direct_target: ""
+
+  - id: RE-03-structure-and-protocol-recovery
+    title: Structure, file-format and protocol recovery
+    track: RE
+    status: planned
+    prereqs: [RE-02-dynamic-re-and-instrumentation]
+    outcomes: [rootcause, map, find]
+    hours: 16
+    rds: "recovering structures and field semantics from stripped code that parses untrusted input"
+    mitigations: []
+    direct_target: ""
+
+  - id: RE-04-patch-diffing-n-days
+    title: Patch diffing to locate and reconstruct an N-day
+    track: RE
+    status: planned
+    prereqs: [RE-03-structure-and-protocol-recovery]
+    outcomes: [rootcause, find]
+    hours: 14
+    rds: "isolating the security-relevant change among noise in a binary diff and writing a trigger for it"
+    mitigations: []
+    direct_target: ""
+
+  - id: BX-05-first-n-day-exploit
+    title: First real N-day exploit under default-era mitigations
+    track: BX
+    status: planned
+    prereqs: [BX-04-aslr-pie-relro-and-leaks, RE-04-patch-diffing-n-days]
+    outcomes: [exploit, rootcause]
+    hours: 16
+    rds: "adapting textbook primitives to the constraints of real code (input filters, allocation order, crash-free return)"
+    mitigations: [NX, stack-canary, ASLR, PIE, full-RELRO]
+    # TODO(research): distro default hardening flags for the pinned target (Q2).
+    # FIRST REAL CVE EXPLOIT.
+    direct_target: ""
+
+  - id: PRO-03-technical-writeup-of-an-n-day
+    title: Writing a public technical writeup of an N-day
+    track: PRO
+    status: planned
+    prereqs: [BX-05-first-n-day-exploit, PRO-02-advisories-cve-and-cwe]
+    outcomes: [disclose]
+    hours: 6
+    rds: "explaining the bug to the line and the exploit step by step so a reader can reproduce it cold"
+    mitigations: []
+    direct_target: ""
+
+  - id: BX-06-cet-cfi-and-what-they-kill
+    title: CET shadow stack, IBT and CFI, and which techniques they kill
+    track: BX
+    status: planned
+    prereqs: [BX-04-aslr-pie-relro-and-leaks]
+    outcomes: [exploit]
+    hours: 8
+    rds: "predicting whether a given chain survives shadow stack and indirect-branch tracking, and why"
+    mitigations: [CET-shadow-stack, CET-IBT, CFI]
+    # TODO(research): Linux userland CET enablement state by distro and CPU; needs-lab-verification.
+    direct_target: ""
+
+  # ---------------------------------------------------------------- discovery block, to the first hunt
+  - id: VD-04-source-audit-memory-safety
+    title: Manual source audit for memory-safety bugs
+    track: VD
+    status: planned
+    prereqs: [VD-03-crash-triage-and-root-cause]
+    outcomes: [find, rootcause]
+    hours: 16
+    rds: "tracing attacker-controlled data across function boundaries to a size, index or lifetime decision"
+    mitigations: []
+    direct_target: ""
+
+  - id: VD-05-logic-injection-and-auth-bugs
+    title: Logic, injection, traversal and authentication bugs
+    track: VD
+    status: planned
+    prereqs: [VD-01-bug-classes-and-attack-surface, FND-07-linux-process-internals-elf-and-linking]
+    outcomes: [find, rootcause, exploit]
+    hours: 20
+    rds: "tracing a request parameter from the HTTP or socket handler to a shell, file path or auth decision"
+    mitigations: []
+    # Memory-safety mitigations do not apply to these classes; the module must say so (D9).
+    # Covers HTTP/CGI basics needed for DR-0003 lane B.
+    direct_target: ""
+
+  - id: PRO-04-coordinated-disclosure-and-advisories
+    title: Coordinated disclosure and writing a vendor-grade advisory
+    track: PRO
+    status: planned
+    prereqs: [PRO-02-advisories-cve-and-cwe, VD-03-crash-triage-and-root-cause]
+    outcomes: [disclose]
+    hours: 8
+    rds: "writing a reproduction section a vendor triager can follow cold"
+    mitigations: []
+    direct_target: ""
+
+  - id: VD-06-variant-analysis-codeql-semgrep
+    title: Variant analysis from a fix with CodeQL and Semgrep
+    track: VD
+    status: planned
+    prereqs: [VD-04-source-audit-memory-safety]
+    outcomes: [find]
+    hours: 16
+    rds: "generalising one fixed bug into a query that finds its siblings without drowning in false positives"
+    mitigations: []
+    direct_target: ""
+
+  - id: VD-07-ai-assisted-vr-and-validation
+    title: AI-assisted vulnerability research with independent validation
+    track: VD
+    status: planned
+    prereqs: [VD-03-crash-triage-and-root-cause, VD-06-variant-analysis-codeql-semgrep]
+    outcomes: [find, rootcause]
+    hours: 8
+    rds: "independently validating or refuting a model-proposed finding with a reproducer and a root cause"
+    mitigations: []
+    # Cross-cutting module (DR-0001); recurs as drills in VD-10 and CAP-01.
+    direct_target: ""
+
+  - id: VD-08-lab-parity-and-target-debugging
+    title: Lab parity, emulation and debugging real targets
+    track: VD
+    status: planned
+    prereqs: [VD-03-crash-triage-and-root-cause, RE-02-dynamic-re-and-instrumentation]
+    outcomes: [find, exploit]
+    hours: 12
+    rds: "making the lab target behave like the real one (config, emulation, debugger attach, stable harness)"
+    mitigations: []
+    # Must include QEMU user-mode emulation of a cross-compiled daemon (DR-0003).
+    direct_target: ""
+
+  - id: VD-09-target-selection-and-novelty-checks
+    title: Target selection and novelty checks
+    track: VD
+    status: planned
+    prereqs: [VD-04-source-audit-memory-safety, VD-05-logic-injection-and-auth-bugs, PRO-02-advisories-cve-and-cwe]
+    outcomes: [map, find]
+    hours: 6
+    rds: "scoring a candidate target on source, build cost, prior CVEs, fuzzing coverage and disclosure path before investing time"
+    mitigations: []
+    direct_target: ""
+
+  - id: PRO-05-bounty-and-vendor-programmes
+    title: Bug bounty and vendor programmes, duplicates and triage
+    track: PRO
+    status: planned
+    prereqs: [PRO-04-coordinated-disclosure-and-advisories]
+    outcomes: [disclose]
+    hours: 5
+    rds: "reading a programme's scope, AI-report and duplicate rules and deciding where a finding should go"
+    mitigations: []
+    direct_target: ""
+
+  - id: VD-10-first-real-bug-hunt
+    title: First real bug hunt on an open-source target
+    track: VD
+    status: planned
+    prereqs: [VD-08-lab-parity-and-target-debugging, VD-09-target-selection-and-novelty-checks, PRO-01-ethics-scope-and-legal-landscape]
+    outcomes: [map, find, rootcause]
+    hours: 40
+    rds: "sustaining a coverage-tracked hunt and deciding when to switch technique or entry point"
+    mitigations: []
+    # FIRST REAL BUG HUNT. Two lanes (DR-0003): A small under-fuzzed OSS C library,
+    # B open-source network service / embedded web stack. Ends with a novel bug or a
+    # negative-result report with coverage evidence. Lab only.
+    direct_target: ""
+
+  - id: PRO-06-disclosure-run-and-public-writeup
+    title: Run disclosure on your hunt result and publish the writeup
+    track: PRO
+    status: planned
+    prereqs: [VD-10-first-real-bug-hunt, PRO-04-coordinated-disclosure-and-advisories]
+    outcomes: [disclose]
+    hours: 10
+    rds: "keeping a disclosure moving: first contact, follow-ups, CNA fallback, publication timing"
+    mitigations: []
+    direct_target: ""
+
+  # ---------------------------------------------------------------- heap block
+  - id: BX-07-glibc-heap-internals
+    title: glibc heap allocator internals
+    track: BX
+    status: planned
+    prereqs: [BX-01-stack-overflow-to-control-flow]
+    outcomes: [exploit, rootcause]
+    hours: 16
+    rds: "predicting allocator state (bins, tcache, chunk headers) after a malloc/free sequence"
+    mitigations: [ASLR, PIE]
+    # TODO(research): glibc version-by-version allocator hardening (Q2).
+    direct_target: ""
+
+  - id: BX-08-heap-bug-classes
+    title: "Heap bug classes: UAF, double free, overflow, uninitialised data"
+    track: BX
+    status: planned
+    prereqs: [BX-07-glibc-heap-internals]
+    outcomes: [exploit, rootcause]
+    hours: 14
+    rds: "turning a heap bug into overlapping or controlled chunks via grooming"
+    mitigations: [NX, ASLR, PIE, full-RELRO]
+    direct_target: ""
+
+  - id: BX-09-modern-glibc-heap-techniques
+    title: Heap techniques that survive modern glibc
+    track: BX
+    status: planned
+    prereqs: [BX-08-heap-bug-classes, BX-04-aslr-pie-relro-and-leaks]
+    outcomes: [exploit]
+    hours: 18
+    rds: "choosing a technique that survives the target glibc's checks and getting the leak it needs"
+    mitigations: [safe-linking, tcache-key, ASLR, PIE, full-RELRO]
+    # TODO(research): which techniques survive current glibc; which glibc version introduced
+    # each check (Q2). Label each technique dead/alive per version, how2heap style.
+    direct_target: ""
+
+  - id: BX-10-heap-n-day-exploit
+    title: Real heap N-day exploit
+    track: BX
+    status: planned
+    prereqs: [BX-09-modern-glibc-heap-techniques, RE-04-patch-diffing-n-days]
+    outcomes: [exploit, rootcause]
+    hours: 20
+    rds: "grooming a real program's heap into the layout the technique needs using only its normal inputs"
+    mitigations: [safe-linking, tcache-key, NX, ASLR, PIE, full-RELRO]
+    direct_target: ""
+
+  - id: BX-11-exploit-reliability-engineering
+    title: Exploit reliability engineering and measurement
+    track: BX
+    status: planned
+    prereqs: [BX-10-heap-n-day-exploit]
+    outcomes: [exploit]
+    hours: 8
+    rds: "finding and removing the sources of nondeterminism that make an exploit fail across runs"
+    mitigations: [ASLR, PIE, safe-linking]
+    # Implements the measured reliability bar proposed in DR-0002 (20 runs, stated rate).
+    direct_target: ""
+
+  - id: PRO-07-portfolio-and-hiring-map
+    title: Portfolio, hiring evidence and role gates
+    track: PRO
+    status: planned
+    prereqs: [PRO-06-disclosure-run-and-public-writeup]
+    outcomes: [disclose]
+    hours: 4
+    rds: "matching your public artefacts to the evidence a specific posting asks for"
+    mitigations: []
+    # Borderline outcome trace (publication of disclosed work). Kept on job-market.md evidence;
+    # flagged for the user in DR-0001 report.
+    direct_target: ""
+
+  # ---------------------------------------------------------------- graduation capstones
+  - id: CAP-01-zero-day-hunt-and-root-cause
+    title: "Capstone 1a: hunt and root-cause a 0-day on a target of your choice"
+    track: CAP
+    status: planned
+    prereqs: [PRO-06-disclosure-run-and-public-writeup, VD-07-ai-assisted-vr-and-validation]
+    outcomes: [map, find, rootcause]
+    hours: 50
+    rds: "choosing, mapping and hunting a target without guidance until a novel, validated bug is root-caused"
+    mitigations: []
+    # Lanes (DR-0003): A OSS library, B OSS network service, C appliance firmware (needs EMB).
+    # Novelty check required before any report (DR-0002).
+    direct_target: ""
+
+  - id: CAP-02-zero-day-exploit-and-disclosure
+    title: "Capstone 1b: exploit or impact PoC, disclosure and public writeup for your 0-day"
+    track: CAP
+    status: planned
+    prereqs: [CAP-01-zero-day-hunt-and-root-cause, BX-11-exploit-reliability-engineering]
+    outcomes: [exploit, disclose]
+    hours: 30
+    rds: "turning your own root-caused bug into a reliable exploit or impact PoC and a disclosure that lands"
+    mitigations: []
+    # Mitigations are the target's own; learner documents them (D9). Reliability bar per DR-0002.
+    direct_target: ""
+
+  - id: CAP-03-mitigation-bypass-exploit
+    title: "Capstone 2: memory-corruption exploit against current mitigations"
+    track: CAP
+    status: planned
+    prereqs: [BX-11-exploit-reliability-engineering, BX-06-cet-cfi-and-what-they-kill]
+    outcomes: [exploit, rootcause, disclose]
+    hours: 60
+    rds: "building a reliable chain on a current target under its default mitigation set"
+    mitigations: [NX, stack-canary, ASLR, PIE, full-RELRO, safe-linking, tcache-key]
+    # TODO(research): current-default mitigation set for the chosen target (Q2).
+    # Guarantees every graduate has one memory-corruption exploit (DR-0002 guard).
+    direct_target: ""
+
+  # ================================================================ electives (placeholders, pending /research)
+  - id: EMB-01-arm-and-mips-for-firmware
+    title: ARM (AArch32/AArch64) and MIPS assembly for firmware RE
+    track: EMB
+    status: planned
+    prereqs: [FND-06-x86-64-assembly-through-gdb, RE-01-static-re-with-a-decompiler]
+    outcomes: [rootcause, exploit]
+    hours: 12
+    rds: "reading calling conventions and stack frames on a non-x86 ISA in a decompiler"
+    mitigations: []
+    direct_target: ""
+
+  - id: EMB-02-firmware-extraction-and-emulation
+    title: Firmware extraction, rehosting and emulation
+    track: EMB
+    status: planned
+    prereqs: [EMB-01-arm-and-mips-for-firmware, VD-08-lab-parity-and-target-debugging]
+    outcomes: [map, find]
+    hours: 16
+    rds: "getting an extracted firmware service to run and accept input under emulation"
+    mitigations: []
+    direct_target: ""
+
+  - id: EMB-03-appliance-web-and-daemon-hunting
+    title: Hunting web-admin and network-daemon surfaces in appliances
+    track: EMB
+    status: planned
+    prereqs: [EMB-02-firmware-extraction-and-emulation, VD-05-logic-injection-and-auth-bugs]
+    outcomes: [map, find, rootcause]
+    hours: 20
+    rds: "tracing a pre-auth request through a stripped CGI or daemon to a dangerous sink"
+    mitigations: []
+    # TODO(research): embedded mitigation state after 2020 (Q3); needs-lab-verification per device.
+    direct_target: ""
+
+  - id: EMB-04-daemon-memory-corruption-exploit
+    title: Exploiting memory corruption in an appliance daemon
+    track: EMB
+    status: planned
+    prereqs: [EMB-03-appliance-web-and-daemon-hunting, BX-05-first-n-day-exploit]
+    outcomes: [exploit, disclose]
+    hours: 20
+    rds: "building a chain on a non-x86 target with the device's real (often partial) mitigation set"
+    mitigations: []
+    # TODO(research): Q3. Track must end with a disclosure deliverable (DR-0001).
+    direct_target: ""
+
+  - id: LK-01-kernel-internals-and-debugging
+    title: Linux kernel internals and QEMU/gdb kernel debugging
+    track: LK
+    status: planned
+    prereqs: [FND-07-linux-process-internals-elf-and-linking, VD-08-lab-parity-and-target-debugging]
+    outcomes: [rootcause, map]
+    hours: 20
+    rds: "building and booting a matching kernel config and attaching a debugger that reflects the target"
+    mitigations: []
+    direct_target: ""
+
+  - id: LK-02-kernel-mitigations
+    title: Kernel mitigations and their bypass families
+    track: LK
+    status: planned
+    prereqs: [LK-01-kernel-internals-and-debugging, BX-04-aslr-pie-relro-and-leaks]
+    outcomes: [exploit]
+    hours: 12
+    rds: "deciding which mitigation blocks a given kernel primitive and what extra primitive bypasses it"
+    mitigations: [KASLR, SMEP, SMAP, KPTI]
+    direct_target: ""
+
+  - id: LK-03-slub-and-cross-cache
+    title: SLUB allocator, heap grooming and cross-cache attacks
+    track: LK
+    status: planned
+    prereqs: [LK-02-kernel-mitigations, BX-08-heap-bug-classes]
+    outcomes: [exploit]
+    hours: 20
+    rds: "turning a weak kernel heap primitive into a useful one (grooming, cross-cache)"
+    mitigations: [KASLR, SMEP, SMAP, KPTI]
+    direct_target: ""
+
+  - id: LK-04-kernel-n-day-on-hardened-config
+    title: End-to-end kernel N-day against the kernelCTF hardened config
+    track: LK
+    status: planned
+    prereqs: [LK-03-slub-and-cross-cache, RE-04-patch-diffing-n-days]
+    outcomes: [exploit, rootcause, disclose]
+    hours: 24
+    rds: "making a kernel exploit pass a 20-run stability bar on the hardened config"
+    mitigations: [KASLR, SMEP, SMAP, KPTI, kCFI, IBT, SLAB_VIRTUAL, KMALLOC_PARTITION_TYPED]
+    # Bar: kernelCTF hardened target config (research/domain-maps/field-overview.md, KCTF).
+    direct_target: ""
+
+  - id: HV-01-device-emulation-architecture
+    title: Hypervisor and device-emulation architecture (QEMU, VirtualBox)
+    track: HV
+    status: planned
+    prereqs: [VD-08-lab-parity-and-target-debugging, RE-03-structure-and-protocol-recovery]
+    outcomes: [map, rootcause]
+    hours: 16
+    rds: "tracing a guest MMIO/PIO access to the host device-model handler"
+    mitigations: []
+    # Nested virtualisation on a laptop is needs-lab-verification (FIELD-SYNTHESIS).
+    direct_target: ""
+
+  - id: HV-02-fuzzing-virtual-devices
+    title: Fuzzing virtual devices
+    track: HV
+    status: planned
+    prereqs: [HV-01-device-emulation-architecture, VD-02-fuzzing-harnesses-and-sanitizers]
+    outcomes: [find]
+    hours: 20
+    rds: "building a stable device-model harness (the cost centre per expert-paths.md)"
+    mitigations: []
+    direct_target: ""
+
+  - id: HV-03-guest-to-host-n-day
+    title: Guest-to-host N-day exploit
+    track: HV
+    status: planned
+    prereqs: [HV-02-fuzzing-virtual-devices, BX-10-heap-n-day-exploit]
+    outcomes: [exploit, disclose]
+    hours: 24
+    rds: "grooming the host process heap from inside the guest"
+    mitigations: [ASLR, NX]
+    # TODO(research): host-process mitigation set for current QEMU/VirtualBox builds.
+    direct_target: ""
+
+  - id: WIN-01-windows-internals-and-windbg
+    title: Windows internals and WinDbg
+    track: WIN
+    status: planned
+    prereqs: [FND-07-linux-process-internals-elf-and-linking, RE-02-dynamic-re-and-instrumentation]
+    outcomes: [rootcause, map]
+    hours: 20
+    rds: "navigating process, thread and object state in WinDbg to answer a specific question"
+    mitigations: []
+    direct_target: ""
+
+  - id: WIN-02-windows-userland-exploitation
+    title: Windows userland exploitation under current mitigations
+    track: WIN
+    status: planned
+    prereqs: [WIN-01-windows-internals-and-windbg, BX-06-cet-cfi-and-what-they-kill]
+    outcomes: [exploit]
+    hours: 20
+    rds: "TODO(research): pending /research WIN"
+    mitigations: []
+    # TODO(research): Windows userland default mitigations (Q4).
+    direct_target: ""
+
+  - id: WIN-03-windows-patch-diffing
+    title: Windows patch diffing to N-day
+    track: WIN
+    status: planned
+    prereqs: [WIN-01-windows-internals-and-windbg, RE-04-patch-diffing-n-days]
+    outcomes: [rootcause, find]
+    hours: 16
+    rds: "isolating the security fix in a monthly update diff"
+    mitigations: []
+    direct_target: ""
+
+  - id: WIN-04-windows-kernel-and-drivers
+    title: Windows kernel and driver exploitation
+    track: WIN
+    status: planned
+    prereqs: [WIN-02-windows-userland-exploitation, WIN-03-windows-patch-diffing]
+    outcomes: [exploit, disclose]
+    hours: 24
+    rds: "TODO(research): pending /research WIN"
+    mitigations: [HVCI]
+    # TODO(research): kernel-mode hardware-enforced stack protection default (Q4).
+    direct_target: ""
+
+  - id: MOB-01-android-architecture-and-attack-surface
+    title: Android architecture and attack surface
+    track: MOB
+    status: planned
+    prereqs: [EMB-01-arm-and-mips-for-firmware, FND-07-linux-process-internals-elf-and-linking]
+    outcomes: [map]
+    hours: 16
+    rds: "mapping which processes parse attacker input and what sandbox each runs in"
+    mitigations: []
+    direct_target: ""
+
+  - id: MOB-02-android-native-userland-bugs
+    title: Android native userland bugs and the Scudo/MTE era
+    track: MOB
+    status: planned
+    prereqs: [MOB-01-android-architecture-and-attack-surface, BX-08-heap-bug-classes]
+    outcomes: [find, exploit]
+    hours: 20
+    rds: "TODO(research): pending /research MOB"
+    mitigations: [Scudo, MTE]
+    # MTE is opt-in per process (AOSP docs, field-overview.md); consumer default needs-lab-verification.
+    direct_target: ""
+
+  - id: MOB-03-android-kernel-and-vendor-drivers
+    title: Android kernel and vendor drivers
+    track: MOB
+    status: planned
+    prereqs: [MOB-02-android-native-userland-bugs, LK-03-slub-and-cross-cache]
+    outcomes: [find, exploit, disclose]
+    hours: 20
+    rds: "TODO(research): pending /research MOB"
+    mitigations: []
+    direct_target: ""
+
+  - id: BRW-01-js-engine-internals
+    title: JavaScript engine internals
+    track: BRW
+    status: planned
+    prereqs: [RE-03-structure-and-protocol-recovery, BX-08-heap-bug-classes]
+    outcomes: [rootcause]
+    hours: 24
+    rds: "reading object layouts and shapes/maps in a debug engine build"
+    mitigations: []
+    direct_target: ""
+
+  - id: BRW-02-jit-bugs-to-addrof-fakeobj
+    title: JIT and type-confusion bugs to addrof/fakeobj
+    track: BRW
+    status: planned
+    prereqs: [BRW-01-js-engine-internals, BX-10-heap-n-day-exploit]
+    outcomes: [exploit, rootcause]
+    hours: 30
+    rds: "turning a JIT/type confusion into addrof/fakeobj"
+    mitigations: [V8-sandbox]
+    direct_target: ""
+
+  - id: BRW-03-sandboxes-and-chains
+    title: Engine sandbox, process sandbox and multi-bug chains
+    track: BRW
+    status: planned
+    prereqs: [BRW-02-jit-bugs-to-addrof-fakeobj]
+    outcomes: [exploit, disclose]
+    hours: 24
+    rds: "TODO(research): pending /research BRW"
+    mitigations: [V8-sandbox, site-isolation]
+    direct_target: ""

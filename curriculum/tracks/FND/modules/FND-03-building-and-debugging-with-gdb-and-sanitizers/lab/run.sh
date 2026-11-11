@@ -1,0 +1,19 @@
+#!/bin/bash
+# Interactive FND-03 shell: no network, ~/osvr-work/fnd03 mounted at /work/fnd03.
+# Honours ENGINE, IMAGE (default osvr-fnd03:1), WORK (default ~/osvr-work/fnd03).
+# ASLR_OFF=1 adds --security-opt seccomp=unconfined so gdb can disable ASLR.
+set -eu
+ENGINE=${ENGINE:-$(command -v podman || command -v docker || true)}
+[ -n "$ENGINE" ] || { echo "FAIL: no podman or docker on PATH" >&2; exit 1; }
+IMAGE=${IMAGE:-osvr-fnd03:1}
+WORK=${WORK:-$HOME/osvr-work/fnd03}
+mkdir -p "$WORK"
+args=(--rm -it --network=none --cap-drop=ALL -v "$WORK:/work/fnd03")
+if [ "${ASLR_OFF:-0}" = 1 ]; then
+  args+=(--security-opt seccomp=unconfined)
+  echo "ASLR_OFF=1: running with seccomp=unconfined so gdb can disable ASLR (network is still off)" >&2
+fi
+case "$(basename "$ENGINE")" in
+  docker) args+=(--user "$(id -u):$(id -g)" --cap-add=SYS_PTRACE) ;;   # Docker: UNTESTED. Rootless podman needs neither
+esac
+exec "$ENGINE" run "${args[@]}" "$IMAGE" "$@"

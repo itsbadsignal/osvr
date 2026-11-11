@@ -1,0 +1,7 @@
+kind: heap-buffer-overflow
+op: WRITE
+size: 1
+offset: 0 bytes after
+region: 5
+frame0: dup_upper:17
+alloc: dup_upper:12

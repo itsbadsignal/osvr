@@ -1,0 +1,77 @@
+# Seed retrieval deck for FND-03-building-and-debugging-with-gdb-and-sanitizers. Minimum 12 cards (D4).
+# Free recall only. The answer must not be visible in the prompt. Answer side ~60 words max.
+# Scheduling fields are added by scripts/srs.py when the learner imports the deck.
+
+cards:
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c01
+    type: concept
+    prompt: "At which two build stages does -fsanitize=address act, and what does it do at each?"
+    answer: "Compile: inserts a shadow check before every load and store, calling __asan_report_* on failure. Link: pulls in the runtime library (libasan) and starts it before main. You need both."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c02
+    type: concept
+    prompt: "A binary links libasan and ASAN_OPTIONS=help=1 prints ASan's flags, yet a known heap overflow goes unreported. What happened, and which command proves it?"
+    answer: "The code was compiled without -fsanitize=address and only linked with it: runtime present, no checks inserted. nm prog | grep -c __asan_report gives 0."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c03
+    type: procedure
+    prompt: "Name the three independent kinds of evidence that a build is really sanitized, and the command for each."
+    answer: "1. The real compile command per object (compile_commands.json, cmake --build -v, make -n). 2. Instrumentation calls in the artefact: nm | grep __asan_report / __ubsan_handle. 3. Runtime linked and alive: ldd | grep asan, ASAN_OPTIONS=help=1."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c04
+    type: fact
+    prompt: "With the lab's gcc, cJSON v1.7.17 built with -DENABLE_SANITIZERS=ON: which sanitizer ends up in the tests, which is missing, and what do the tests report?"
+    answer: "UBSan is in (libubsan linked, __ubsan_handle symbols). ASan is missing (0 __asan_report symbols, no libasan). ctest still reports 19/19 passed."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c05
+    type: concept
+    prompt: "Why did CMake's CHECK_C_COMPILER_FLAG reject -fsanitize=address with gcc in cJSON's build?"
+    answer: "Its test program was compiled with the flag but linked without it, so the instrumented object referenced __asan_init with no runtime to provide it. The link failed, and CMake recorded the flag as unsupported and silently dropped it."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c06
+    type: procedure
+    prompt: "Where do you look to learn why a CMake feature check failed, in the lab's CMake?"
+    answer: "CMakeCache.txt shows the result (empty FLAG_SUPPORTED_x = failed). <builddir>/CMakeFiles/CMakeConfigureLog.yaml holds the check's exact compile and link commands and the compiler's error output."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c07
+    type: fact
+    prompt: "You change -D options and re-run cmake on an existing build directory, but the build behaves as before. Why, and the fix?"
+    answer: "CMakeCache.txt persists cached values, including earlier feature-check results. Configure into a new build directory (or delete the old one)."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c08
+    type: concept
+    prompt: "`make cJSON_test CFLAGS=\"...\"` drops a flag the Makefile itself adds. Which flag, and what rule causes it?"
+    answer: "-fstack-protector. A variable set on make's command line overrides all assignments to it in the Makefile, including CFLAGS += ... lines."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c09
+    type: code
+    prompt: "Write the cmake configure line for a cJSON test build with ASan, fatal UBSan, debug info, -O0, frame pointers, and a per-file command log."
+    answer: "cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug -DENABLE_CJSON_TEST=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_FLAGS=\"-g -O0 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined\""
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c10
+    type: fact
+    prompt: "By default, what does UBSan do after printing a runtime error, and what does ASan do? Which flag changes UBSan's behaviour?"
+    answer: "UBSan prints and continues (exit status unaffected). ASan stops the program after its report. -fno-sanitize-recover=undefined makes UBSan abort with a non-zero exit."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c11
+    type: diagram
+    prompt: "Write the shadow-address formula and the check gcc's ASan emits for a 1-byte store on x86-64 (lab gcc 14). Then compare with objdump of an instrumented store."
+    answer: "shadow = (addr >> 3) + 0x7fff8000; k = *shadow. Report if k != 0 and (addr & 7) >= k. For an N-byte access the left side is (addr & 7) + N - 1."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c12
+    type: fact
+    prompt: "In an ASan report's shadow map, what do 00, 05 and fa mean?"
+    answer: "00: all 8 bytes addressable. 05: only the first 5 of the 8 are addressable (for example the end of malloc(5)). fa: heap left redzone, not addressable."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c13
+    type: procedure
+    prompt: "An ASan program under gdb prints its report and exits with 'No stack.' Give two ways to stop at the bad access instead."
+    answer: "1. Start with ASAN_OPTIONS=abort_on_error=1: SIGABRT, then bt and frame N to the faulting frame. 2. break __asan_report_store1 (or the matching load/store and width, from nm | grep __asan_report): stops before the report, frame #1 is the access."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c14
+    type: fact
+    prompt: "An ASan-built program passes everything but exits with code 1 when run under gdb. What message appears, and the fix?"
+    answer: "'LeakSanitizer has encountered a fatal error ... does not work under ptrace (strace, gdb, etc)'. LSan runs at exit and refuses to work under a tracer. Run gdb with ASAN_OPTIONS=detect_leaks=0."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c15
+    type: concept
+    prompt: "`break parse_number` in a cJSON test shows <MULTIPLE> with four locations after run. Where are they, and how do you restrict it?"
+    answer: "The test executable's own copy (tests include ../cJSON.c), libcjson.so, and two in the ASan runtime's internal format parser. Use break cJSON.c:parse_number."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c16
+    type: procedure
+    prompt: "Count how many times a function is called in a full run with gdb, without stopping at each call."
+    answer: "break FILE:FUNCTION, then ignore <bpnum> 100000, then run. When the program exits, info breakpoints shows 'breakpoint already hit N times'."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c17
+    type: fact
+    prompt: "In an ASan build, gdb shows a fresh heap buffer full of '\\276'. What is that byte and why is it there?"
+    answer: "0xbe (190), ASan's malloc_fill_byte: the allocator fills newly allocated memory with it. It marks bytes nobody has written yet."
+  - id: FND-03-building-and-debugging-with-gdb-and-sanitizers-c18
+    type: concept
+    prompt: "A cJSON test passes under ctest but fails when you run the binary by hand from the build root. Most likely cause?"
+    answer: "Working directory. ctest runs each test in its registered directory (build/tests); the test opens inputs/... by relative path, which does not exist from the build root."

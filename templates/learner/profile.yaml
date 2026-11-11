@@ -1,0 +1,17 @@
+# Copy to learner/profile.yaml (written by /coach intake).
+handle: ""
+started: YYYY-MM-DD
+goal_12_months: ""          # in their words, e.g. "first CVE in an open-source C project"
+hours_per_week: 10
+schedule: ""                # e.g. "weekday evenings 1h, Saturday 4h"
+background:
+  c: none | basic | solid
+  assembly: none | basic | solid
+  linux: basic | solid | expert
+  debugging: none | basic | solid
+  ctf: ""                   # platforms and level
+  other: ""                 # job, adjacent skills
+hardware: ""                # RAM, CPU, OS, can run Docker/QEMU?
+coaching_style: strict | relaxed
+specialisation_interest: [] # LK, WIN, BRW, EMB, MOB, HV
+notes: ""

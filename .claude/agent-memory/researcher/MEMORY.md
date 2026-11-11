@@ -1,0 +1,8 @@
+- [PRO domain sources](reference_pro_domain_sources.md) — working/dead disclosure and legal URLs, PDF text-recovery trick (2026-11-10)
+- [CVE target verification](reference_cve_target_verification.md) — podman, MITRE API, git-diff method; FND shortlist outcomes and dead ends
+- [Job posting APIs](reference_job_posting_apis.md) — working ATS JSON endpoints and dead ends for fetching postings (2026-11-10)
+- [FND sources](reference_fnd_sources.md) — reachable vs bot-blocked sources for the FND track; local toolchain state (2026-11-10)
+- [Fuzzing/VD sources](reference_fuzzing_vd_sources.md) — working doc URLs, archived tools, PDF fetch dead ends (2026-11-10)
+- [RE tooling fetch tricks](reference_re_tooling_fetch_tricks.md) — GitHub rate-limit workaround, NVD API, ar5iv, OST2 short URLs, Debian snapshot (2026-11-10)
+- [Target research APIs](reference_target_research_apis.md) — NVD/GitHub/OSS-Fuzz metric gathering that works, blocked pages (2026-11-10)
+- [glibc/BX research routes](reference_glibc_bx_sources.md) — tag-by-tag malloc.c scan, ftp.gnu.org tarballs, podman probes, dead ends (2026-11-10)

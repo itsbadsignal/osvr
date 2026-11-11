@@ -1,0 +1,3 @@
+# Copy to learner/cards.yaml, or let `python3 scripts/srs.py import <MODULE_ID>` create it.
+# Scheduling fields (ease, interval, reps, lapses, due, last) are managed by srs.py.
+cards: []

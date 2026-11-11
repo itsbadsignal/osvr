@@ -1,0 +1,69 @@
+# OSVR skill tree. Source of truth for sequencing.
+# Copy to curriculum/skill-tree.yaml. Validate with: python3 scripts/validate.py --tree-only
+#
+# Node fields
+#   id           <TRACK>-<NN>-<slug>, never reused
+#   title        short human title
+#   track        must match the id prefix and a key in `tracks`
+#   status       planned | drafting | ready | deprecated
+#   prereqs      list of node ids that are genuinely required
+#   outcomes     subset of [map, find, rootcause, exploit, disclose]
+#   hours        realistic estimate for the target learner, including project
+#   rds          the rate-determining step (what drills target)
+#   mitigations  mitigations in play for this module (D9)
+#   direct_target  the real artefact; filled by module-builder
+
+version: 1
+updated: 2026-11-10
+
+tracks:
+  FND: {title: Foundations, core: true}
+  RE:  {title: Reverse engineering, core: true}
+  BX:  {title: Binary exploitation, core: true}
+  VD:  {title: Vulnerability discovery, core: true}
+  PRO: {title: Professional practice and disclosure, core: true}
+
+nodes:
+  - id: FND-01-c-memory-model
+    title: C and the process memory model
+    track: FND
+    status: planned
+    prereqs: []
+    outcomes: [rootcause]
+    hours: 20
+    rds: "predicting where a C object lives and what overwriting past it touches"
+    mitigations: []
+    direct_target: ""
+
+  - id: FND-02-x86-64-asm-debugging
+    title: x86-64 assembly through a debugger
+    track: FND
+    status: planned
+    prereqs: [FND-01-c-memory-model]
+    outcomes: [rootcause, exploit]
+    hours: 25
+    rds: "reading a function's prologue/epilogue and stack frame live in gdb"
+    mitigations: []
+    direct_target: ""
+
+  - id: BX-01-stack-overflow-to-rip
+    title: Stack overflow to controlled RIP
+    track: BX
+    status: planned
+    prereqs: [FND-02-x86-64-asm-debugging]
+    outcomes: [exploit]
+    hours: 12
+    rds: "computing the offset to saved RIP and verifying it in the debugger"
+    mitigations: [NX]
+    direct_target: ""
+
+  - id: PRO-01-coordinated-disclosure
+    title: Coordinated disclosure and writing an advisory
+    track: PRO
+    status: planned
+    prereqs: [BX-01-stack-overflow-to-rip]
+    outcomes: [disclose]
+    hours: 6
+    rds: "writing a reproduction section a vendor triager can follow cold"
+    mitigations: []
+    direct_target: ""
