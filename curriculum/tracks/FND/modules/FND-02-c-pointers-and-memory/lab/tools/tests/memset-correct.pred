@@ -1,7 +1,0 @@
-kind: heap-buffer-overflow
-op: WRITE
-size: 17
-offset: 0 bytes after
-region: 16
-frame0: clear:7
-alloc: main:12

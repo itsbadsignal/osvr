@@ -1,2 +1,0 @@
-- [Architecture v1](project_architecture_v1.md) — 2026-11-10 track set, core order, hours, rejected options (DR-0001..0006)
-- [Open research gaps](project_research_gaps.md) — research requests blocking BX/EMB/WIN design and VD-10 targets

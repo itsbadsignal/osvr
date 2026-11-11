@@ -1,7 +1,0 @@
-kind: stack-buffer-overflow
-op: WRITE
-size: 4
-offset: 0 bytes after
-region: 16
-frame0: main:19
-alloc: scores

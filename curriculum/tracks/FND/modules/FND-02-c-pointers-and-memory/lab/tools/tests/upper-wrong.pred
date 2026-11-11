@@ -1,7 +1,0 @@
-kind: heap-buffer-overflow
-op: READ
-size: 1
-offset: 0 bytes after
-region: 6
-frame0: dup_upper:15
-alloc: dup_upper:12

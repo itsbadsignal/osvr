@@ -1,7 +1,0 @@
-kind: global-buffer-overflow
-op: WRITE
-size: 1
-offset: 0 bytes after
-region: 16
-frame0: main:9
-alloc: table

@@ -1,4 +1,4 @@
-# Learner state is personal. Keep it out of the public repo.
-learner/*
-!learner/.gitkeep
+
+
+
 *.yaml.tmp
